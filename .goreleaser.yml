@@ -1,0 +1,27 @@
+builds:
+  - id: bulkai
+    binary: bulkai
+    main: ./cmd/bulkai
+    goarch:
+      - "386"
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - "6"
+      - "7"
+  - id: bulkaigui
+    binary: bulkaigui
+    main: ./cmd/bulkaigui
+    goarch:
+      - "386"
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - "6"
+      - "7"
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -H=windowsgui
+archives:
+  - format: zip

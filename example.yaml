@@ -1,0 +1,11 @@
+bot: midjourney
+album: cute-animals
+download: true
+upscale: true
+variation: false
+thumbnail: true
+suffix: " --ar 3:2"
+prompt:
+  - cute-animals-1.txt
+  - cute-animals-2.txt
+  - cute monkey dancing on a tree
