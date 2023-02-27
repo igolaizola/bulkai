@@ -3,25 +3,40 @@ builds:
     binary: bulkai
     main: ./cmd/bulkai
     goarch:
-      - "386"
       - amd64
       - arm64
       - arm
-    goarm:
-      - "6"
-      - "7"
-  - id: bulkaigui
+  # TODO: fix building bulkaigui for linux and macos
+  # see https://github.com/igolaizola/bulkai/actions/runs/4286376336/jobs/7465884873
+  # and https://github.com/igolaizola/bulkai/actions/runs/4286465507/jobs/7466067761 
+  # - id: bulkaigui
+  #   binary: bulkaigui
+  #   main: ./cmd/bulkaigui
+  #   goos:
+  #     - darwin
+  #     - linux
+  #   goarch:
+  #     - amd64
+  #     - arm64
+  - id: bulkaigui-win
     binary: bulkaigui
     main: ./cmd/bulkaigui
+    goos:
+      - windows
     goarch:
-      - "386"
       - amd64
       - arm64
-      - arm
-    goarm:
-      - "6"
-      - "7"
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -H=windowsgui
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser -H=windowsgui
 archives:
-  - format: zip
+  - id: bulkai
+    builds:
+      - bulkai
+    format: zip
+    name_template: 'bulkai_{{ .Version }}_{{- if eq .Os "darwin" }}macos{{- else }}{{ .Os }}{{ end }}_{{ .Arch }}'
+  - id: bulkaigui
+    builds:
+      # - bulkaigui
+      - bulkaigui-win
+    format: zip
+    name_template: 'bulkaigui_{{ .Version }}_{{- if eq .Os "darwin" }}macos{{- else }}{{ .Os }}{{ end }}_{{ .Arch }}'
