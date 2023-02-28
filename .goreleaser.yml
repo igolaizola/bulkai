@@ -6,18 +6,18 @@ builds:
       - amd64
       - arm64
       - arm
-  # TODO: fix building bulkaigui for linux and macos
-  # see https://github.com/igolaizola/bulkai/actions/runs/4286376336/jobs/7465884873
-  # and https://github.com/igolaizola/bulkai/actions/runs/4286465507/jobs/7466067761 
-  # - id: bulkaigui
-  #   binary: bulkaigui
-  #   main: ./cmd/bulkaigui
-  #   goos:
-  #     - darwin
-  #     - linux
-  #   goarch:
-  #     - amd64
-  #     - arm64
+  - id: bulkaigui
+    binary: bulkaigui
+    main: ./cmd/bulkaigui
+    goos:
+      - darwin
+      # TODO: fix building bulkaigui for linux
+      # see https://github.com/igolaizola/bulkai/actions/runs/4286376336/jobs/7465884873
+      # - linux
+    goarch:
+      - amd64
+      # See https://github.com/igolaizola/bulkai/actions/runs/4297235927/jobs/7489952439
+      # - arm64
   - id: bulkaigui-win
     binary: bulkaigui
     main: ./cmd/bulkaigui
@@ -36,7 +36,7 @@ archives:
     name_template: 'bulkai_{{ .Version }}_{{- if eq .Os "darwin" }}macos{{- else }}{{ .Os }}{{ end }}_{{ .Arch }}'
   - id: bulkaigui
     builds:
-      # - bulkaigui
+      - bulkaigui
       - bulkaigui-win
     format: zip
     name_template: 'bulkaigui_{{ .Version }}_{{- if eq .Os "darwin" }}macos{{- else }}{{ .Os }}{{ end }}_{{ .Arch }}'
