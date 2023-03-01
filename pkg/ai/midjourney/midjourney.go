@@ -127,8 +127,8 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 			}
 			// Search for matching callbacks
 			c.lck.Lock()
-			callbacks, ok := c.callback[key]
-			if !ok {
+			callbacks := c.callback[key]
+			if len(callbacks) == 0 {
 				c.lck.Unlock()
 				return
 			}
