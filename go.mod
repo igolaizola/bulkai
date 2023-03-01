@@ -17,7 +17,7 @@ require (
 	github.com/peterbourgon/ff/v3 v3.3.0
 	golang.org/x/exp/shiny v0.0.0-20220827204233-334a2380cb91
 	golang.org/x/image v0.5.0
-	golang.org/x/net v0.5.0
+	golang.org/x/net v0.7.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -37,6 +37,6 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326 // indirect
-	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 )
