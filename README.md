@@ -32,7 +32,7 @@ go install github.com/igolaizola/bulkai/cmd/bulkai@latest
 To install the GUI:
 
 ```bash
-go install github.com/igolaizola/bulkai/cmd/bulkai-gui@latest
+go install github.com/igolaizola/bulkai/cmd/bulkaigui@latest
 ```
 
 Or you can download the binary from the [releases](https://github.com/igolaizola/bulkai/releases)
@@ -74,7 +74,7 @@ album: cute-animals
 download: true
 upscale: true
 variation: false
-thumbnails: true
+thumbnail: true
 suffix: " --ar 3:2"
 prompt:
   - cute-animals-1.txt
@@ -178,23 +178,25 @@ The authors are released of any liabilities which your usage may entail.
 
 ## Support
 
-If you've found my code useful, please support my late nights spent coding and the coffees I drink to keep me going!
+If you have found my code helpful, please give the repository a star ⭐
 
-You can support me by buying me a coffee:
+Additionally, if you would like to support my late-night coding efforts and the coffee that keeps me going, I would greatly appreciate a donation.
+
+You can invite me for a coffee:
 
 <a href="https://www.buymeacoffee.com/igolaizola">
     <img src="https://user-images.githubusercontent.com/11333576/221318625-736e63fe-489e-434e-b239-5c891cf5026a.png"/>
 </a>
 
-Donating to my PayPal:
+Donate to my PayPal:
 
 [paypal.me/igolaizola](https://www.paypal.me/igolaizola)
 
-Sponsoring me on GitHub:
+Sponsor me on GitHub:
 
 [github.com/sponsors/igolaizola](https://github.com/sponsors/igolaizola)
 
-Or by donating to any of my crypto addresses:
+Or donate to any of my crypto addresses:
 
  - BTC `bc1qvuyrqwhml65adlu0j6l59mpfeez8ahdmm6t3ge`
  - ETH `0x960a7a9cdba245c106F729170693C0BaE8b2fdeD`
