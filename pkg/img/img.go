@@ -19,7 +19,7 @@ func Split4(input string, outputs []string) error {
 	ext := filepath.Ext(input)
 	var encode func(io.Writer, image.Image) error
 	switch ext {
-	case ".png":
+	case ".png", ".webp":
 		encode = png.Encode
 	case ".jpg", ".jpeg":
 		encode = func(w io.Writer, m image.Image) error {
@@ -81,7 +81,7 @@ func Resize(div int, path, output string) error {
 	ext := filepath.Ext(output)
 	var encode func(io.Writer, image.Image) error
 	switch ext {
-	case ".png":
+	case ".png", ".webp":
 		encode = png.Encode
 	case ".jpg", ".jpeg":
 		encode = func(w io.Writer, m image.Image) error {
