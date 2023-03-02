@@ -31,6 +31,8 @@ go install github.com/igolaizola/bulkai/cmd/bulkai@latest
 
 To install the GUI:
 
+> The GUI is a work in progress and it may not work properly.
+
 ```bash
 go install github.com/igolaizola/bulkai/cmd/bulkaigui@latest
 ```
@@ -99,6 +101,8 @@ Prompt field will be ignored and the prompts will be loaded from the album.
 
 ## Usage: graphical user interface
 
+> The GUI is a work in progress and it may not work properly.
+
 The binary you need to use is `bulkaigui`.
 
 ### 1. Create session (only for the first time)
@@ -164,6 +168,25 @@ If unset the maximum for the bot will be used.
  - `wait` (int): Time to wait between prompts. (optional)
 There is already a rate limit implemented to avoid sending too many requests to discord.
  - `debug` (bool): Enable debug mode. (default: `false`)
+
+## FAQ
+
+### Do I need to generate a new session every time I want to use use **bulkai**?
+
+No, you only need to generate a new session if you want to use a different account.
+
+### Do I need to enable relaxed mode?
+
+It is up to you to use relaxed or fast mode.
+Just keep in mind that if you use fast mode with a lot of prompts, you may consume your quota very quickly.
+
+### Can I use suffix settings of midjourney?
+
+You must disable any suffix configurations in discord, such as `High quality` or `Style High`, or any suffixes configured with `/prefer`.
+If you don't disable them, **bulkai** won't be able to retrieve generated images.
+
+However, you can use the `suffix` parameter of **bulkai** to add a suffixes to all prompts.
+For example, if you want to use the `High quality` setting, you can use `suffix: " --q 2"`.
 
 ## Disclaimer
 
