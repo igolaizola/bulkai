@@ -173,14 +173,14 @@ func Bulk(ctx context.Context, cli Client, prompts []string, skip []int, variati
 }
 
 func (i *Image) FileName() string {
-	prompt := clearString(i.Prompt)
+	prompt := fixString(i.Prompt)
 	ext := filepath.Ext(i.URL)
 	return fmt.Sprintf("%s_%05d_%02d%s", prompt, i.PromptIndex, i.ImageIndex, ext)
 }
 
 func (i *Image) FileNames() []string {
 	var names []string
-	prompt := clearString(i.Prompt)
+	prompt := fixString(i.Prompt)
 	ext := filepath.Ext(i.URL)
 	for j := 0; j < 4; j++ {
 		names = append(names, fmt.Sprintf("%s_%05d_%02d%s", prompt, i.PromptIndex, i.ImageIndex+j, ext))
@@ -190,7 +190,7 @@ func (i *Image) FileNames() []string {
 
 var nonAlphanumericRegex = regexp.MustCompile(`[^\p{L}\p{N} _]+`)
 
-func clearString(str string) string {
+func fixString(str string) string {
 	split := strings.Split(str, " ")
 	var filtered []string
 	for _, s := range split {
@@ -205,7 +205,13 @@ func clearString(str string) string {
 	str = strings.Join(filtered, "_")
 
 	str = nonAlphanumericRegex.ReplaceAllString(str, "")
-	return strings.ReplaceAll(str, " ", "_")
+	str = strings.ReplaceAll(str, " ", "_")
+
+	// Limit to 50 characters to avoid issues with file names
+	if len(str) > 50 {
+		str = str[:50]
+	}
+	return str
 }
 
 func imagine(cli Client, ctx context.Context, prompt string) (*Preview, error) {
