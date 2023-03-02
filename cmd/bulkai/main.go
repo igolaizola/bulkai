@@ -16,7 +16,10 @@ import (
 	"github.com/peterbourgon/ff/v3/ffyaml"
 )
 
+// Build flags
 var Version = "dev"
+var Commit = ""
+var Date = ""
 
 func main() {
 	// Create signal based context
@@ -138,7 +141,17 @@ func newVersionCommand() *ffcli.Command {
 		ShortUsage: "bulkai version",
 		ShortHelp:  "print version",
 		Exec: func(ctx context.Context, args []string) error {
-			fmt.Println(Version)
+			var v []string
+			if Version != "" {
+				v = append(v, Version)
+			}
+			if Commit != "" {
+				v = append(v, Commit)
+			}
+			if Date != "" {
+				v = append(v, Date)
+			}
+			fmt.Println(strings.Join(v, " "))
 			return nil
 		},
 	}
