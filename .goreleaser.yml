@@ -10,13 +10,12 @@ builds:
     binary: bulkaigui
     main: ./cmd/bulkaigui
     goos:
-      - darwin
-      # TODO: fix building bulkaigui for linux
-      # see https://github.com/igolaizola/bulkai/actions/runs/4286376336/jobs/7465884873
-      # - linux
+      # Fix building bulkaigui for macos
+      # - darwin
+      - linux
     goarch:
       - amd64
-      # See https://github.com/igolaizola/bulkai/actions/runs/4297235927/jobs/7489952439
+      # Fix building bulkaigui for arm64
       # - arm64
   - id: bulkaigui-win
     binary: bulkaigui
