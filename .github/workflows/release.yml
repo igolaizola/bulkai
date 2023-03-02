@@ -11,6 +11,7 @@ permissions:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    environment: main
     steps:
       - uses: actions/checkout@v3
         with:
@@ -24,6 +25,9 @@ jobs:
         run: |
           sudo apt update
           sudo apt install gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
+      - uses: sigstore/cosign-installer@main
+        with:
+          cosign-release: 'v2.0.0' # optional
       - uses: goreleaser/goreleaser-action@v4
         with:
           distribution: goreleaser
@@ -31,3 +35,4 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COSIGN_PWD: ${{ secrets.COSIGN_PWD }}

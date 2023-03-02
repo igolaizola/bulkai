@@ -39,3 +39,13 @@ archives:
       - bulkaigui-win
     format: zip
     name_template: 'bulkaigui_{{ .Version }}_{{- if eq .Os "darwin" }}macos{{- else }}{{ .Os }}{{ end }}_{{ .Arch }}'
+signs:
+- cmd: cosign
+  stdin: '{{ .Env.COSIGN_PWD }}'
+  args:
+  - "sign-blob"
+  - "--key=cosign.key"
+  - "--output-signature=${signature}"
+  - "${artifact}"
+  - "--yes" # needed on cosign 2.0.0+
+  artifacts: all
