@@ -17,6 +17,8 @@ builds:
       - amd64
       # Fix building bulkaigui for arm64
       # - arm64
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.Commit}} -X main.Date={{.Date}}
   - id: bulkaigui-win
     binary: bulkaigui
     main: ./cmd/bulkaigui
@@ -26,7 +28,7 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser -H=windowsgui
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.Commit}} -X main.Date={{.Date}} -H=windowsgui
 archives:
   - id: bulkai
     builds:

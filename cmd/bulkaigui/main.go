@@ -6,13 +6,17 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime/debug"
 
 	"github.com/igolaizola/bulkai/pkg/gui"
 	"github.com/peterbourgon/ff/v3"
 	"github.com/peterbourgon/ff/v3/ffcli"
 )
 
-var Version = "dev"
+// Build flags
+var Version = ""
+var Commit = ""
+var Date = ""
 
 func main() {
 	// Create signal based context
@@ -39,7 +43,16 @@ func newCommand() *ffcli.Command {
 		ShortHelp: "launch gui",
 		FlagSet:   fs,
 		Exec: func(ctx context.Context, args []string) error {
-			return gui.Run(ctx, Version)
+			v := Version
+			if v == "" {
+				if buildInfo, ok := debug.ReadBuildInfo(); ok {
+					v = buildInfo.Main.Version
+				}
+			}
+			if v == "" {
+				v = "dev"
+			}
+			return gui.Run(ctx, v)
 		},
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"strings"
 
 	"github.com/igolaizola/bulkai"
@@ -17,7 +18,7 @@ import (
 )
 
 // Build flags
-var Version = "dev"
+var Version = ""
 var Commit = ""
 var Date = ""
 
@@ -141,17 +142,23 @@ func newVersionCommand() *ffcli.Command {
 		ShortUsage: "bulkai version",
 		ShortHelp:  "print version",
 		Exec: func(ctx context.Context, args []string) error {
-			var v []string
-			if Version != "" {
-				v = append(v, Version)
+			v := Version
+			if v == "" {
+				if buildInfo, ok := debug.ReadBuildInfo(); ok {
+					v = buildInfo.Main.Version
+				}
 			}
+			if v == "" {
+				v = "dev"
+			}
+			versionFields := []string{v}
 			if Commit != "" {
-				v = append(v, Commit)
+				versionFields = append(versionFields, Commit)
 			}
 			if Date != "" {
-				v = append(v, Date)
+				versionFields = append(versionFields, Date)
 			}
-			fmt.Println(strings.Join(v, " "))
+			fmt.Println(strings.Join(versionFields, " "))
 			return nil
 		},
 	}
