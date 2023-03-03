@@ -39,13 +39,13 @@ type Client struct {
 func New(client *discord.Client, channelID string, debug bool) (ai.Client, error) {
 	node, err := snowflake.NewNode(0)
 	if err != nil {
-		return nil, fmt.Errorf("bluewillow: couldn't create snowflake node")
+		return nil, fmt.Errorf("midjourney: couldn't create snowflake node")
 	}
 
 	if channelID == "" {
 		channelID = client.DM(botID)
 		if channelID == "" {
-			return nil, fmt.Errorf("bluewillow: couldn't find dm channel for bot")
+			return nil, fmt.Errorf("midjourney: couldn't find dm channel for bot")
 		}
 	}
 
@@ -75,56 +75,83 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 		case discord.MessageCreateEvent, discord.MessageUpdateEvent:
 			var msg discord.Message
 			if err := json.Unmarshal(e.RawData, &msg); err != nil {
-				log.Println("bluewillow: couldn't unmarshal message: %w", err)
+				log.Println("midjourney: couldn't unmarshal message: %w", err)
 			}
 			c.debugLog(e.Type, e.RawData)
 
-			// Ignore messages that don't have an attachment
-			if len(msg.Attachments) == 0 {
-				return
-			}
-			// Ignore message already in the cache
-			c.lck.Lock()
-			_, ok := c.cache[msg.Attachments[0].URL]
-			c.lck.Unlock()
-			if ok {
-				return
+			var key search
+			var cacheID string
+
+			switch {
+			case len(msg.Attachments) > 0:
+				// Ignore webp attachments as they are not fully finished images
+				if msg.Attachments[0].ContentType == "image/webp" {
+					return
+				}
+
+				// Attachment based message
+				cacheID = msg.Attachments[0].URL
+
+				// Ignore message already in the cache
+				c.lck.Lock()
+				_, ok := c.cache[cacheID]
+				c.lck.Unlock()
+				if ok {
+					return
+				}
+
+				// Parse prompt
+				prompt, rest, ok := parseContent(msg.Content)
+				if !ok {
+					return
+				}
+
+				switch {
+				case strings.Contains(rest, upscaleTerm):
+					// Ignore messages that don't have an attachment
+					if len(msg.Attachments) == 0 {
+						return
+					}
+					key = upscaleSearch(prompt)
+				case strings.Contains(rest, variationTerm):
+					// Ignore messages that don't have preview data
+					if len(msg.Attachments) == 0 {
+						return
+					}
+					if len(msg.Components) == 0 {
+						return
+					}
+					key = variationSearch(prompt)
+				default:
+					// Ignore messages that don't have preview data
+					if len(msg.Attachments) == 0 {
+						return
+					}
+					if len(msg.Components) == 0 {
+						return
+					}
+					key = previewSearch(prompt)
+				}
+			case msg.Nonce != "":
+				// Nonce based message
+				cacheID = msg.Nonce
+
+				// Ignore message already in the cache
+				c.lck.Lock()
+				_, ok := c.cache[cacheID]
+				c.lck.Unlock()
+				if ok {
+					return
+				}
+
+				// Parse prompt
+				if _, _, ok := parseContent(msg.Content); !ok {
+					return
+				}
+
+				key = nonceSearch(msg.Nonce)
 			}
 
-			// Search prompt
-			split := strings.SplitN(msg.Content, "**", 3)
-			if len(split) != 3 {
-				return
-			}
-			prompt := split[1]
-			rest := split[2]
-			var key search
-			switch {
-			case strings.Contains(rest, upscaleTerm):
-				// Ignore messages that don't have an attachment
-				if len(msg.Attachments) == 0 {
-					return
-				}
-				key = upscaleSearch(prompt)
-			case strings.Contains(rest, variationTerm):
-				// Ignore messages that don't have preview data
-				if len(msg.Attachments) == 0 {
-					return
-				}
-				if len(msg.Components) == 0 {
-					return
-				}
-				key = variationSearch(prompt)
-			default:
-				// Ignore messages that don't have preview data
-				if len(msg.Attachments) == 0 {
-					return
-				}
-				if len(msg.Components) == 0 {
-					return
-				}
-				key = previewSearch(prompt)
-			}
 			// Search for matching callbacks
 			c.lck.Lock()
 			callbacks := c.callback[key]
@@ -137,7 +164,7 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 			c.callback[key] = callbacks[1:]
 
 			// Add the message to the cache
-			c.cache[msg.Attachments[0].URL] = struct{}{}
+			c.cache[cacheID] = struct{}{}
 			c.lck.Unlock()
 
 			// Launch the callback
@@ -163,6 +190,17 @@ func (c *Client) debugLog(t string, v interface{}) {
 	log.Println(t, string(js))
 }
 
+func parseContent(content string) (string, string, bool) {
+	// Search prompt
+	split := strings.SplitN(content, "**", 3)
+	if len(split) != 3 {
+		return "", "", false
+	}
+	prompt := split[1]
+	rest := split[2]
+	return prompt, rest, true
+}
+
 type search interface {
 	value() string
 }
@@ -185,7 +223,13 @@ func (s variationSearch) value() string {
 	return string(s)
 }
 
-func (c *Client) receiveMessage(parent context.Context, key search) (*discord.Message, error) {
+type nonceSearch string
+
+func (s nonceSearch) value() string {
+	return string(s)
+}
+
+func (c *Client) receiveMessage(parent context.Context, key search, fn func() error) (*discord.Message, error) {
 	msgChan := make(chan *discord.Message)
 	defer close(msgChan)
 	c.lck.Lock()
@@ -193,6 +237,13 @@ func (c *Client) receiveMessage(parent context.Context, key search) (*discord.Me
 		msgChan <- m
 	})
 	c.lck.Unlock()
+
+	// Execute the function if any
+	if fn != nil {
+		if err := fn(); err != nil {
+			return nil, err
+		}
+	}
 
 	// Add a timeout to receive the message
 	ctx, cancel := context.WithTimeout(parent, 10*time.Minute)
@@ -260,11 +311,27 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 		Nonce: nonce,
 	}
 	c.debugLog("IMAGINE", imagine)
-	if _, err := c.c.Do(ctx, "POST", "interactions", imagine); err != nil {
-		return nil, fmt.Errorf("midjourney: couldn't send imagine interaction: %w", err)
+
+	response, err := c.receiveMessage(ctx, nonceSearch(nonce), func() error {
+		// Launch imagine interaction inside the receive message process
+		// because the response may be received before it finishes, due to
+		// rate limit locking.
+		if _, err := c.c.Do(ctx, "POST", "interactions", imagine); err != nil {
+			return fmt.Errorf("midjourney: couldn't send imagine interaction: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("midjourney: couldn't receive imagine response: %w", err)
 	}
 
-	preview, err := c.receiveMessage(ctx, previewSearch(prompt))
+	// Parse prompt
+	responsePrompt, _, ok := parseContent(response.Content)
+	if !ok {
+		return nil, fmt.Errorf("midjourney: couldn't parse prompt from imagine response: %s", response.Content)
+	}
+
+	preview, err := c.receiveMessage(ctx, previewSearch(responsePrompt), nil)
 	if err != nil {
 		return nil, fmt.Errorf("midjourney: couldn't receive links message: %w", err)
 	}
@@ -288,10 +355,11 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 		return nil, fmt.Errorf("midjourney: message has no image ids")
 	}
 	return &ai.Preview{
-		URL:       preview.Attachments[0].URL,
-		Prompt:    prompt,
-		MessageID: preview.ID,
-		ImageIDs:  imageIDs,
+		URL:            preview.Attachments[0].URL,
+		Prompt:         prompt,
+		ResponsePrompt: responsePrompt,
+		MessageID:      preview.ID,
+		ImageIDs:       imageIDs,
 	}, nil
 }
 
@@ -319,7 +387,7 @@ func (c *Client) Upscale(ctx context.Context, preview *ai.Preview, index int) (s
 		return "", fmt.Errorf("midjourney: couldn't send upscale interaction: %w", err)
 	}
 
-	msg, err := c.receiveMessage(ctx, upscaleSearch(preview.Prompt))
+	msg, err := c.receiveMessage(ctx, upscaleSearch(preview.ResponsePrompt), nil)
 	if err != nil {
 		return "", fmt.Errorf("midjourney: couldn't receive links message: %w", err)
 	}
@@ -349,7 +417,7 @@ func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) 
 		return nil, fmt.Errorf("midjourney: couldn't send variation interaction: %w", err)
 	}
 
-	msg, err := c.receiveMessage(ctx, variationSearch(preview.Prompt))
+	msg, err := c.receiveMessage(ctx, variationSearch(preview.ResponsePrompt), nil)
 	if err != nil {
 		return nil, fmt.Errorf("midjourney: couldn't receive links message: %w", err)
 	}
@@ -373,9 +441,10 @@ func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) 
 		return nil, fmt.Errorf("midjourney: message has no image ids")
 	}
 	return &ai.Preview{
-		URL:       msg.Attachments[0].URL,
-		Prompt:    preview.Prompt,
-		MessageID: msg.ID,
-		ImageIDs:  imageIDs,
+		URL:            msg.Attachments[0].URL,
+		Prompt:         preview.Prompt,
+		ResponsePrompt: preview.ResponsePrompt,
+		MessageID:      msg.ID,
+		ImageIDs:       imageIDs,
 	}, nil
 }

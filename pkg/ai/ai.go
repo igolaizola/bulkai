@@ -14,10 +14,11 @@ import (
 )
 
 type Preview struct {
-	URL       string
-	Prompt    string
-	MessageID string
-	ImageIDs  []string
+	URL            string
+	Prompt         string
+	ResponsePrompt string
+	MessageID      string
+	ImageIDs       []string
 }
 
 type Client interface {
