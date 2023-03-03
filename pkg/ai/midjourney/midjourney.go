@@ -28,7 +28,7 @@ type Client struct {
 	c         *discord.Client
 	debug     bool
 	node      *snowflake.Node
-	callback  map[search][]func(*discord.Message)
+	callback  map[search][]func(*discord.Message) bool
 	cache     map[string]struct{}
 	lck       sync.Mutex
 	channelID string
@@ -64,7 +64,7 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 		c:         client,
 		debug:     debug,
 		node:      node,
-		callback:  make(map[search][]func(*discord.Message)),
+		callback:  make(map[search][]func(*discord.Message) bool),
 		cache:     make(map[string]struct{}),
 		channelID: channelID,
 		guildID:   guildID,
@@ -153,22 +153,30 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 			}
 
 			// Search for matching callbacks
-			c.lck.Lock()
-			callbacks := c.callback[key]
-			if len(callbacks) == 0 {
+			for {
+				c.lck.Lock()
+				callbacks := c.callback[key]
+				if len(callbacks) == 0 {
+					c.lck.Unlock()
+					return
+				}
+				// Get and remove the first callback
+				f := callbacks[0]
+				c.callback[key] = callbacks[1:]
+				c.lck.Unlock()
+
+				// Launch the callback
+				if ok := f(&msg); !ok {
+					// If returns false, it means it was expired
+					continue
+				}
+
+				// Add the message to the cache
+				c.lck.Lock()
+				c.cache[cacheID] = struct{}{}
 				c.lck.Unlock()
 				return
 			}
-			// Get and remove the first callback
-			f := callbacks[0]
-			c.callback[key] = callbacks[1:]
-
-			// Add the message to the cache
-			c.cache[cacheID] = struct{}{}
-			c.lck.Unlock()
-
-			// Launch the callback
-			f(&msg)
 		}
 	})
 	return c, nil
@@ -233,8 +241,16 @@ func (c *Client) receiveMessage(parent context.Context, key search, fn func() er
 	msgChan := make(chan *discord.Message)
 	defer close(msgChan)
 	c.lck.Lock()
-	c.callback[key] = append(c.callback[key], func(m *discord.Message) {
+	c.callback[key] = append(c.callback[key], func(m *discord.Message) bool {
+		// Check if channel is still open
+		select {
+		case <-msgChan:
+			return false
+		default:
+		}
+		// Send the message
 		msgChan <- m
+		return true
 	})
 	c.lck.Unlock()
 
