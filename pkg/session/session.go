@@ -24,6 +24,13 @@ import (
 )
 
 func Run(ctx context.Context, profile bool, output, proxy string) error {
+	if output == "" {
+		return errors.New("output file is required")
+	}
+	if fi, err := os.Stat(output); err == nil && fi.IsDir() {
+		return fmt.Errorf("output file is a directory: %s", output)
+	}
+
 	log.Println("Starting browser")
 	defer log.Println("Browser stopped")
 
@@ -260,20 +267,20 @@ func Run(ctx context.Context, profile bool, output, proxy string) error {
 	if err != nil {
 		return fmt.Errorf("couldn't marshal session: %w", err)
 	}
-	log.Println("Session successfully obtained: ")
-	fmt.Println(string(data))
+	log.Println("Session successfully obtained")
 
 	// If the file already exists, copy it to a backup file
 	if _, err := os.Stat(output); err == nil {
-		ext := filepath.Ext(output)
+		backup := output
+		ext := filepath.Ext(backup)
 		// Remove the extension from the output
-		output = strings.TrimSuffix(output, ext)
+		backup = strings.TrimSuffix(backup, ext)
 		// Add a timestamp to the backup file
-		output = fmt.Sprintf("%s_%s%s", output, time.Now().Format("20060102150405"), ext)
-		if err := os.Rename(output, output); err != nil {
+		backup = fmt.Sprintf("%s_%s%s", backup, time.Now().Format("20060102150405"), ext)
+		if err := os.Rename(output, backup); err != nil {
 			return fmt.Errorf("couldn't backup session: %w", err)
 		}
-		log.Println("Previous session backed up to", output)
+		log.Println("Previous session backed up to", backup)
 	}
 
 	// Write the session to the output file

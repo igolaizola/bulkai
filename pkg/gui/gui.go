@@ -355,13 +355,7 @@ func (s *state) start() {
 }
 
 func (s *state) createSession() {
-	// Get current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		s.error(err)
-		return
-	}
-	if err := session.Run(s.ctx, false, cwd, s.cfg.Proxy); err != nil {
+	if err := session.Run(s.ctx, false, sessionFile, s.cfg.Proxy); err != nil {
 		s.error(err)
 	}
 }
