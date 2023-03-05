@@ -12,6 +12,7 @@ import (
 
 	"github.com/igolaizola/bulkai"
 	"github.com/igolaizola/bulkai/pkg/session"
+	"github.com/igolaizola/bulkai/pkg/webui"
 	"github.com/peterbourgon/ff/v3"
 	"github.com/peterbourgon/ff/v3/ffcli"
 	"github.com/peterbourgon/ff/v3/ffyaml"
@@ -41,11 +42,16 @@ func newCommand() *ffcli.Command {
 		ShortUsage: "bulkai [flags] <subcommand>",
 		FlagSet:    fs,
 		Exec: func(ctx context.Context, args []string) error {
-			return flag.ErrHelp
+			if fs.NArg() > 0 {
+				return flag.ErrHelp
+			}
+			// A simple double-click on the executable will open the webui
+			return webui.Serve(ctx, 0)
 		},
 		Subcommands: []*ffcli.Command{
 			newGenerateCommand(),
 			newCreateSessionCommand(),
+			newWebCommand(),
 			newVersionCommand(),
 		},
 	}
@@ -132,6 +138,20 @@ func newCreateSessionCommand() *ffcli.Command {
 		FlagSet:   fs,
 		Exec: func(ctx context.Context, args []string) error {
 			return session.Run(ctx, *profile, *output, *proxy)
+		},
+	}
+}
+
+func newWebCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("web", flag.ExitOnError)
+	port := fs.Int("port", 0, "port (optional)")
+
+	return &ffcli.Command{
+		Name:       "web",
+		ShortUsage: "web --port <port>",
+		ShortHelp:  "launch web ui",
+		Exec: func(ctx context.Context, args []string) error {
+			return webui.Serve(ctx, *port)
 		},
 	}
 }

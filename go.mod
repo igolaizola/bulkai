@@ -15,6 +15,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/igolaizola/giov v0.0.0-20230224222616-657ba5f48ad6
 	github.com/peterbourgon/ff/v3 v3.3.0
+	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	golang.org/x/exp/shiny v0.0.0-20220827204233-334a2380cb91
 	golang.org/x/image v0.5.0
 	golang.org/x/net v0.7.0
