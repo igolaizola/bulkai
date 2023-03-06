@@ -205,11 +205,13 @@ If you have found my code helpful, please give the repository a star ⭐
 
 Additionally, if you would like to support my late-night coding efforts and the coffee that keeps me going, I would greatly appreciate a donation.
 
-You can invite me for a coffee:
+You can invite me for a coffee at ko-fi (0% fees):
 
-<a href="https://www.buymeacoffee.com/igolaizola">
-    <img src="https://user-images.githubusercontent.com/11333576/221318625-736e63fe-489e-434e-b239-5c891cf5026a.png"/>
-</a>
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/igolaizola)
+
+Or at buymeacoffee:
+
+[![buymeacoffee](https://user-images.githubusercontent.com/11333576/223217083-123c2c53-6ab8-4ea8-a2c8-c6cb5d08e8d2.png)](https://buymeacoffee.com/igolaizola)
 
 Donate to my PayPal:
 
