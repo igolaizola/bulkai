@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -273,28 +274,47 @@ func (c *Client) receiveMessage(parent context.Context, key search, fn func() er
 }
 
 func (c *Client) Start(ctx context.Context) error {
-	u := fmt.Sprintf("users/%s/profile?with_mutual_guilds=false&with_mutual_friends_count=false", botID)
-	var user discord.User
-	resp, err := c.c.Do(ctx, "GET", u, nil)
-	if err != nil {
-		return fmt.Errorf("bluewillow: couldn't get user %s: %w", botID, err)
-	}
-	if err := json.Unmarshal(resp, &user); err != nil {
-		return fmt.Errorf("bluewillow: couldn't unmarshal user %s: %w", string(resp), err)
-	}
-	applicationID := user.Application.ID
-	if applicationID == "" {
-		return fmt.Errorf("bluewillow: couldn't find application id for user %s", botID)
-	}
-
-	u = fmt.Sprintf("channels/%s/application-commands/search?type=1&application_id=%s&include_applications=true", c.channelID, applicationID)
 	var appSearch discord.ApplicationCommandSearch
-	resp, err = c.c.Do(ctx, "GET", u, nil)
-	if err != nil {
-		return fmt.Errorf("bluewillow: couldn't get application command search: %w", err)
-	}
-	if err := json.Unmarshal(resp, &appSearch); err != nil {
-		return fmt.Errorf("bluewillow: couldn't unmarshal application command search %s: %w", string(resp), err)
+
+	switch c.guildID {
+	case "":
+		// Search for command in a DM channel
+		u := fmt.Sprintf("users/%s/profile?with_mutual_guilds=false&with_mutual_friends_count=false", botID)
+		var user discord.User
+		resp, err := c.c.Do(ctx, "GET", u, nil)
+		if err != nil {
+			return fmt.Errorf("bluewillow: couldn't get user %s: %w", botID, err)
+		}
+		if err := json.Unmarshal(resp, &user); err != nil {
+			return fmt.Errorf("bluewillow: couldn't unmarshal user %s: %w", string(resp), err)
+		}
+		applicationID := user.Application.ID
+		if applicationID == "" {
+			return fmt.Errorf("bluewillow: couldn't find application id for user %s", botID)
+		}
+
+		u = fmt.Sprintf("channels/%s/application-commands/search?type=1&include_applications=true", c.channelID)
+		resp, err = c.c.Do(ctx, "GET", u, nil)
+		if err != nil {
+			return fmt.Errorf("bluewillow: couldn't get application command search: %w", err)
+		}
+		if err := json.Unmarshal(resp, &appSearch); err != nil {
+			return fmt.Errorf("bluewillow: couldn't unmarshal application command search %s: %w", string(resp), err)
+		}
+	default:
+		// Search for command in a guild channel
+		typings := []string{"im", "ima", "imag", "imagi", "imagin"}
+		typing := typings[rand.Intn(len(typings))]
+
+		u := fmt.Sprintf("channels/%s/application-commands/search?type=1&query=%s&limit=7&include_applications=false", c.channelID, typing)
+		var appSearch discord.ApplicationCommandSearch
+		resp, err := c.c.Do(ctx, "GET", u, nil)
+		if err != nil {
+			return fmt.Errorf("bluewillow: couldn't get application command search: %w", err)
+		}
+		if err := json.Unmarshal(resp, &appSearch); err != nil {
+			return fmt.Errorf("bluewillow: couldn't unmarshal application command search %s: %w", string(resp), err)
+		}
 	}
 
 	var cmd *discordgo.ApplicationCommand
