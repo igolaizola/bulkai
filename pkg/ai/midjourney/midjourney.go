@@ -453,6 +453,7 @@ func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) 
 		Type:          3,
 		ApplicationID: c.cmd.ApplicationID,
 		ChannelID:     c.channelID,
+		GuildID:       c.guildID,
 		SessionID:     c.c.Session(),
 		Data: discord.InteractionComponentData{
 			ComponentType: 2,
