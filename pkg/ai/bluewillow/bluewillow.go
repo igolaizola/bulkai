@@ -299,6 +299,9 @@ func (c *Client) Start(ctx context.Context) error {
 
 	var cmd *discordgo.ApplicationCommand
 	for _, c := range appSearch.Commands {
+		if c.ApplicationID != botID {
+			continue
+		}
 		if c.Name != "imagine" {
 			continue
 		}
