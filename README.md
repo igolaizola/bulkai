@@ -180,14 +180,6 @@ No, you only need to generate a new session if you want to use a different accou
 It is up to you to use relaxed or fast mode.
 Just keep in mind that if you use fast mode with a lot of prompts, you may consume your quota very quickly.
 
-### Can I use suffix settings of midjourney?
-
-You must disable any suffix configurations in discord, such as `High quality` or `Style High`, or any suffixes configured with `/prefer`.
-If you don't disable them, **bulkai** won't be able to retrieve generated images.
-
-However, you can use the `suffix` parameter of **bulkai** to add a suffixes to all prompts.
-For example, if you want to use the `High quality` setting, you can use `suffix: " --q 2"`.
-
 ## Disclaimer
 
 The automation of User Discord accounts also known as self-bots is a violation of Discord Terms of Service & Community guidelines and will result in your account(s) being terminated.
