@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -105,6 +106,8 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 				if !ok {
 					return
 				}
+				// Remove links from the prompt
+				prompt = fromResponsePrompt(prompt)
 
 				switch {
 				case strings.Contains(rest, upscaleTerm):
@@ -365,9 +368,10 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 	}
 
 	// Bluewillow doesn't send the prompt in a returning message
-	responsePrompt := prompt
+	// so we have to remove the links from the prompt
+	responsePrompt := toResponsePrompt(prompt)
 
-	preview, err := c.receiveMessage(ctx, previewSearch(prompt), nil)
+	preview, err := c.receiveMessage(ctx, previewSearch(responsePrompt), nil)
 	if err != nil {
 		return nil, fmt.Errorf("bluewillow: couldn't receive links message: %w", err)
 	}
@@ -484,4 +488,16 @@ func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) 
 		MessageID:      msg.ID,
 		ImageIDs:       imageIDs,
 	}, nil
+}
+
+var linkRegex = regexp.MustCompile(`https?://[^\s]+`)
+
+func toResponsePrompt(s string) string {
+	return linkRegex.ReplaceAllString(s, "<LINK>")
+}
+
+var linkWrappedRegex = regexp.MustCompile(`<https?://[^\s]+>`)
+
+func fromResponsePrompt(s string) string {
+	return linkWrappedRegex.ReplaceAllString(s, "<LINK>")
 }
