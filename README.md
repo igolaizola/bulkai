@@ -23,25 +23,13 @@
 
 You can use the golang binary to install **bulkai**:
 
-To install the cli:
-
 ```bash
 go install github.com/igolaizola/bulkai/cmd/bulkai@latest
 ```
 
-To install the GUI:
-
-> The GUI is a work in progress and it may not work properly.
-
-```bash
-go install github.com/igolaizola/bulkai/cmd/bulkaigui@latest
-```
-
 Or you can download the binary from the [releases](https://github.com/igolaizola/bulkai/releases)
 
-## Usage: command-line interface 
-
-The binary you need to use is `bulkai`.
+## Usage 
 
 ### 1. Create session (only for the first time)
 
@@ -97,43 +85,6 @@ bulkai generate
 
 You can press `Ctrl+C` to stop the generation.
 If you want to resume the generation, just press launch the command again using the same settings and album name.
-Prompt field will be ignored and the prompts will be loaded from the album.
-
-## Usage: graphical user interface
-
-> The GUI is a work in progress and it may not work properly.
-
-The binary you need to use is `bulkaigui`.
-
-### 1. Create session (only for the first time)
-
-You first need to create a session file with the discord credentials and other information retrieved from your browser.
-**bulkai** needs this to:
-
- - Be able to login to Discord
- - Mimic the browser and avoid being detected as a bot
-
-Go to the `Settings` tab and click on the `Create session` button.
-
-### 2. Configure settings
-
-On the `Settings` tab you can configure different settings.
-This options will be saved in the configuration file.
-See the parameters section to see all available options: [Parameters](#parameters)
-
-On the `Main` tab you can set the name of the album and the prompts to use.
-Each line will be processed as a different prompt.
-You can also set the path to a prompt file instead.
-
-### 3. Launch
-
-Press the `Start` button to launch the generation.
-Images will be downloaded to the album name in the output directory specified in the configuration file.
-You will be able to see the progress in the window.
-This task can take a long time depending on the number of images to generate.
-
-You can use the `Stop` button to stop the generation.
-If you want to resume the generation, just press the `Start` button again using the same settings and album name.
 Prompt field will be ignored and the prompts will be loaded from the album.
 
 ## Parameters
@@ -227,6 +178,5 @@ Thanks for your support!
 
 Some of the resources I used to create this project:
 
- - [jkvatne/gio-v](https://github.com/jkvatne/gio-v) to be able to implement the GUI in a quick and easy way.
  - [bwmarrin/discordgo](https://github.com/bwmarrin/discordgo) to retrieve events from Discord.
  - [Danny-Dasilva/CycleTLS](https://github.com/Danny-Dasilva/CycleTLS) to mimic the browser and avoid being detected as a bot.
