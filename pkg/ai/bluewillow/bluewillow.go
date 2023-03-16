@@ -310,7 +310,6 @@ func (c *Client) Start(ctx context.Context) error {
 		typing := typings[rand.Intn(len(typings))]
 
 		u := fmt.Sprintf("channels/%s/application-commands/search?type=1&query=%s&limit=7&include_applications=false", c.channelID, typing)
-		var appSearch discord.ApplicationCommandSearch
 		resp, err := c.c.Do(ctx, "GET", u, nil)
 		if err != nil {
 			return fmt.Errorf("bluewillow: couldn't get application command search: %w", err)
