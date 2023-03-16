@@ -17,11 +17,12 @@ import (
 )
 
 const (
-	botID         = "936929561302675456"
-	upscaleTerm   = "Upscaled by"
-	variationTerm = "Variations by"
-	upscaleID     = "MJ::JOB::upsample::"
-	variationID   = "MJ::JOB::variation::"
+	botID           = "936929561302675456"
+	upscaleTerm     = "Upscaled by"
+	imageNumberTerm = "Image #"
+	variationTerm   = "Variations by"
+	upscaleID       = "MJ::JOB::upsample::"
+	variationID     = "MJ::JOB::variation::"
 )
 
 type Client struct {
@@ -107,7 +108,7 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 				}
 
 				switch {
-				case strings.Contains(rest, upscaleTerm):
+				case strings.Contains(rest, upscaleTerm) || strings.Contains(rest, imageNumberTerm):
 					// Ignore messages that don't have an attachment
 					if len(msg.Attachments) == 0 {
 						return
