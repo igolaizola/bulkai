@@ -362,15 +362,20 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 		Nonce: nonce,
 	}
 	c.debugLog("IMAGINE", imagine)
-	if _, err := c.c.Do(ctx, "POST", "interactions", imagine); err != nil {
-		return nil, fmt.Errorf("bluewillow: couldn't send imagine interaction: %w", err)
-	}
 
 	// Bluewillow doesn't send the prompt in a returning message
 	// so we have to remove the links from the prompt
 	responsePrompt := toResponsePrompt(prompt)
 
-	preview, err := c.receiveMessage(ctx, previewSearch(responsePrompt), nil)
+	preview, err := c.receiveMessage(ctx, previewSearch(responsePrompt), func() error {
+		// Launch interaction inside the receive message process because the
+		// response may be received before it finishes, due to rate limit
+		// locking.
+		if _, err := c.c.Do(ctx, "POST", "interactions", imagine); err != nil {
+			return fmt.Errorf("bluewillow: couldn't send imagine interaction: %w", err)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("bluewillow: couldn't receive links message: %w", err)
 	}
@@ -422,11 +427,16 @@ func (c *Client) Upscale(ctx context.Context, preview *ai.Preview, index int) (s
 		MessageID: preview.MessageID,
 	}
 	c.debugLog("UPSCALE", upscale)
-	if _, err := c.c.Do(ctx, "POST", "interactions", upscale); err != nil {
-		return "", fmt.Errorf("bluewillow: couldn't send upscale interaction: %w", err)
-	}
 
-	msg, err := c.receiveMessage(ctx, upscaleSearch(preview.ResponsePrompt), nil)
+	msg, err := c.receiveMessage(ctx, upscaleSearch(preview.ResponsePrompt), func() error {
+		// Launch interaction inside the receive message process because the
+		// response may be received before it finishes, due to rate limit
+		// locking.
+		if _, err := c.c.Do(ctx, "POST", "interactions", upscale); err != nil {
+			return fmt.Errorf("bluewillow: couldn't send upscale interaction: %w", err)
+		}
+		return nil
+	})
 	if err != nil {
 		return "", fmt.Errorf("bluewillow: couldn't receive links message: %w", err)
 	}
@@ -453,11 +463,16 @@ func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) 
 		MessageID: preview.MessageID,
 	}
 	c.debugLog("VARIATION", variation)
-	if _, err := c.c.Do(ctx, "POST", "interactions", variation); err != nil {
-		return nil, fmt.Errorf("bluewillow: couldn't send variation interaction: %w", err)
-	}
 
-	msg, err := c.receiveMessage(ctx, variationSearch(preview.ResponsePrompt), nil)
+	msg, err := c.receiveMessage(ctx, variationSearch(preview.ResponsePrompt), func() error {
+		// Launch interaction inside the receive message process because the
+		// response may be received before it finishes, due to rate limit
+		// locking.
+		if _, err := c.c.Do(ctx, "POST", "interactions", variation); err != nil {
+			return fmt.Errorf("bluewillow: couldn't send variation interaction: %w", err)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("bluewillow: couldn't receive variant message: %w", err)
 	}
