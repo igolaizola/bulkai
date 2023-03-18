@@ -109,25 +109,15 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 
 				switch {
 				case strings.Contains(rest, upscaleTerm) || strings.Contains(rest, imageNumberTerm):
-					// Ignore messages that don't have an attachment
-					if len(msg.Attachments) == 0 {
-						return
-					}
 					key = upscaleSearch(prompt)
 				case strings.Contains(rest, variationTerm):
 					// Ignore messages that don't have preview data
-					if len(msg.Attachments) == 0 {
-						return
-					}
 					if len(msg.Components) == 0 {
 						return
 					}
 					key = variationSearch(prompt)
 				default:
 					// Ignore messages that don't have preview data
-					if len(msg.Attachments) == 0 {
-						return
-					}
 					if len(msg.Components) == 0 {
 						return
 					}
