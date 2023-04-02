@@ -187,7 +187,7 @@ func (c *Client) debugLog(t string, v interface{}) {
 		log.Println(t)
 		return
 	}
-	js, _ := json.MarshalIndent(v, "", "  ")
+	js, _ := json.Marshal(v)
 	log.Println(t, string(js))
 }
 
