@@ -66,6 +66,9 @@ type Message struct {
 
 	// A list of components attached to the message.
 	Components []*Component `json:"components"`
+
+	// A list of embeds present in the message.
+	Embeds []*discordgo.MessageEmbed `json:"embeds"`
 }
 
 type Component struct {
