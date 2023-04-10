@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -109,6 +110,9 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 				if !ok {
 					return
 				}
+
+				// Remove links from the prompt
+				prompt = replaceLinks(prompt)
 
 				switch {
 				case strings.Contains(rest, upscaleTerm) || strings.Contains(rest, imageNumberTerm):
@@ -413,6 +417,10 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 		return nil, fmt.Errorf("midjourney: couldn't parse prompt from imagine response: %s", response.Content)
 	}
 
+	// The response prompt links may differ from the final links, so we need to
+	// replace them with placeholders.
+	responsePrompt = replaceLinks(responsePrompt)
+
 	preview, err := c.receiveMessage(ctx, previewSearch(responsePrompt), nil)
 	if err != nil {
 		return nil, fmt.Errorf("midjourney: couldn't receive links message: %w", err)
@@ -540,4 +548,12 @@ func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) 
 		MessageID:      msg.ID,
 		ImageIDs:       imageIDs,
 	}, nil
+}
+
+var linkRegex = regexp.MustCompile(`https?://[^\s]+`)
+var linkWrappedRegex = regexp.MustCompile(`<https?://[^\s]+>`)
+
+func replaceLinks(s string) string {
+	s = linkWrappedRegex.ReplaceAllString(s, "<LINK>")
+	return linkRegex.ReplaceAllString(s, "<LINK>")
 }
