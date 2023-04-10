@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -37,6 +38,30 @@ type Image struct {
 	PromptIndex int
 	ImageIndex  int
 	IsLast      bool
+}
+
+type Error struct {
+	error
+	temporary bool
+}
+
+func NewError(err error, temporary bool) Error {
+	return Error{
+		error:     err,
+		temporary: temporary,
+	}
+}
+
+func (e Error) Error() string {
+	return e.error.Error()
+}
+
+func (e Error) Unwrap() error {
+	return e.error
+}
+
+func (e Error) Temporary() bool {
+	return e.temporary
 }
 
 type entry struct {
@@ -268,6 +293,11 @@ func retry(ctx context.Context, fn func(context.Context) error) error {
 		err := fn(ctx)
 		if err == nil {
 			return nil
+		}
+		// If the error is not temporary, return it
+		var aiErr Error
+		if errors.As(err, &aiErr) && !aiErr.Temporary() {
+			return err
 		}
 		attempts++
 		if attempts >= maxAttempts {

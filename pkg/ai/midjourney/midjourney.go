@@ -35,6 +35,7 @@ type Client struct {
 	channelID string
 	guildID   string
 	cmd       *discordgo.ApplicationCommand
+	validator Validator
 }
 
 func New(client *discord.Client, channelID string, debug bool) (ai.Client, error) {
@@ -69,6 +70,7 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 		cache:     make(map[string]struct{}),
 		channelID: channelID,
 		guildID:   guildID,
+		validator: NewValidator(),
 	}
 
 	c.c.OnEvent(func(e *discordgo.Event) {
@@ -326,6 +328,11 @@ func (c *Client) Start(ctx context.Context) error {
 }
 
 func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error) {
+	// Validate prompt
+	if err := c.validator.ValidatePrompt(prompt); err != nil {
+		return nil, ai.NewError(err, false)
+	}
+
 	nonce := c.node.Generate().String()
 	imagine := &discord.InteractionCommand{
 		Type:          2,
