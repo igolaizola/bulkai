@@ -89,8 +89,8 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 
 			switch {
 			case len(msg.Attachments) > 0:
-				// Ignore webp attachments as they are not fully finished images
-				if msg.Attachments[0].ContentType == "image/webp" {
+				// Ignore messages that don't have components
+				if len(msg.Components) == 0 {
 					return
 				}
 
@@ -118,16 +118,8 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 				case strings.Contains(rest, upscaleTerm) || strings.Contains(rest, imageNumberTerm):
 					key = upscaleSearch(prompt)
 				case strings.Contains(rest, variationTerm):
-					// Ignore messages that don't have preview data
-					if len(msg.Components) == 0 {
-						return
-					}
 					key = variationSearch(prompt)
 				default:
-					// Ignore messages that don't have preview data
-					if len(msg.Components) == 0 {
-						return
-					}
 					key = previewSearch(prompt)
 				}
 			case msg.Nonce != "":
