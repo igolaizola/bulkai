@@ -202,9 +202,35 @@ func parseContent(content string) (string, string, bool) {
 	return prompt, rest, true
 }
 
+func parseEmbedFooter(prompt string, msg *discord.Message) (string, error) {
+	if len(msg.Embeds) == 0 {
+		return "", errors.New("midjourney: message has no embed")
+	}
+	embed := msg.Embeds[0]
+	if embed.Footer == nil {
+		return "", errors.New("midjourney: embed has no footer")
+	}
+	footer := embed.Footer.Text
+	if !strings.HasPrefix(footer, "/imagine ") {
+		return "", fmt.Errorf("midjourney: footer doesn't start with /imagine: %s", footer)
+	}
+	footer = strings.TrimPrefix(footer, "/imagine ")
+	if !strings.HasPrefix(footer, prompt) {
+		return "", fmt.Errorf("midjourney: footer doesn't start with prompt: %s", footer)
+	}
+	suffixes := strings.TrimPrefix(footer, prompt)
+	// Remove extra space that sometimes appears when suffixes are configured
+	if strings.HasPrefix(suffixes, "  ") {
+		suffixes = strings.TrimPrefix(suffixes, " ")
+	}
+	return fmt.Sprintf("%s%s", prompt, suffixes), nil
+}
+
 var ErrInvalidParameter = errors.New("invalid parameter")
 var ErrInvalidLink = errors.New("invalid link")
 var ErrBannedPrompt = errors.New("banned prompt")
+var ErrJobQueued = errors.New("job queued")
+var ErrQueueFull = errors.New("queue full")
 
 func parseError(msg *discord.Message) error {
 	if len(msg.Embeds) == 0 {
@@ -224,6 +250,12 @@ func parseError(msg *discord.Message) error {
 	case "banned prompt":
 		err := fmt.Errorf("midjourney: %w: %s", ErrBannedPrompt, desc)
 		return ai.NewError(err, false)
+	case "job queued":
+		err := fmt.Errorf("midjourney: %w: %s", ErrJobQueued, desc)
+		return ai.NewError(err, false)
+	case "queue full":
+		err := fmt.Errorf("midjourney: %w: %s", ErrQueueFull, desc)
+		return ai.NewError(err, true)
 	default:
 		err := fmt.Errorf("midjourney: %s: %s", title, desc)
 		return ai.NewError(err, true)
@@ -403,10 +435,20 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 	responsePrompt, _, ok := parseContent(response.Content)
 	if !ok {
 		// Check if the response contains an error message
-		if err := parseError(response); err != nil {
+		err := parseError(response)
+		switch {
+		case errors.Is(err, ErrJobQueued):
+			// The job is queued, so it will be processed.
+			// We will take the response prompt from the message embed footer.
+			responsePrompt, err = parseEmbedFooter(prompt, response)
+			if err != nil {
+				return nil, err
+			}
+		case err != nil:
 			return nil, err
+		default:
+			return nil, fmt.Errorf("midjourney: couldn't parse prompt from imagine response: %s", response.Content)
 		}
-		return nil, fmt.Errorf("midjourney: couldn't parse prompt from imagine response: %s", response.Content)
 	}
 
 	// The response prompt links may differ from the final links, so we need to
