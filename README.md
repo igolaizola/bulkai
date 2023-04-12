@@ -116,7 +116,7 @@ If unset the DM chat with the bot will be used.
  - `proxy` (string): Proxy to use in HTTP calls. (optional)
  - `concurrency` (int): How many prompts can be running at the same time. (optional)
 If unset the maximum for the bot will be used.
- - `wait` (int): Time to wait between prompts. (optional)
+ - `wait` (duration): Time to wait between prompts, for example `5s`. (optional)
 There is already a rate limit implemented to avoid sending too many requests to discord.
  - `debug` (bool): Enable debug mode. (default: `false`)
 
@@ -130,6 +130,13 @@ No, you only need to generate a new session if you want to use a different accou
 
 It is up to you to use relaxed or fast mode.
 Just keep in mind that if you use fast mode with a lot of prompts, you may consume your quota very quickly.
+
+## I'm getting `couldn't find dm channel for bot` error
+
+You must manually join the discord server of the bot you want to use.
+Then you have to open a DM chat with the bot.
+Alternatively, you can specify the channel to use in the form `guild/channel`.
+The bot must be available in the channel you specify.
 
 ## Disclaimer
 
