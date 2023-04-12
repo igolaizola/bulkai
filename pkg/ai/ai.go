@@ -303,6 +303,16 @@ func retry(ctx context.Context, fn func(context.Context) error) error {
 		if attempts >= maxAttempts {
 			return err
 		}
-		log.Println("retrying...", err)
+		// If the error is not a context deadline exceeded, wait before retrying
+		if !errors.Is(err, context.DeadlineExceeded) {
+			log.Println("waiting and retrying...", err)
+			select {
+			case <-time.After(10 * time.Minute):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		} else {
+			log.Println("retrying...", err)
+		}
 	}
 }
