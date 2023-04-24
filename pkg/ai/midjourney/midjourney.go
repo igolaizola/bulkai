@@ -82,6 +82,10 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 			if err := json.Unmarshal(e.RawData, &msg); err != nil {
 				log.Println("midjourney: couldn't unmarshal message: %w", err)
 			}
+			// Ignore messages from other channels
+			if msg.ChannelID != c.channelID {
+				return
+			}
 			c.debugLog(e.Type, e.RawData)
 
 			var key search
