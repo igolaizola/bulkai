@@ -194,6 +194,36 @@ func (c *Client) Do(ctx context.Context, method string, path string, body interf
 
 var errBadGateway = errors.New("discord: bad gateway")
 
+type Error struct {
+	Code      int    `json:"code"`
+	Message   string `json:"message"`
+	temporary bool
+}
+
+func (e Error) Error() string {
+	return fmt.Sprintf("discord: %s (%d)", e.Message, e.Code)
+}
+
+func (e Error) Temporary() bool {
+	return e.temporary
+}
+
+var ErrMessageNotFound = &Error{Message: "Unknown Message", Code: 10008, temporary: false}
+
+func parseError(raw string) error {
+	var err Error
+	if err := json.Unmarshal([]byte(raw), &err); err != nil {
+		return nil
+	}
+	err.temporary = true
+	switch err.Code {
+	case 10008:
+		return ErrMessageNotFound
+	default:
+		return err
+	}
+}
+
 func (c *Client) do(method string, path string, body interface{}) ([]byte, error) {
 	// Rate limit
 	c.doLck.Lock()
@@ -268,6 +298,9 @@ func (c *Client) do(method string, path string, body interface{}) ([]byte, error
 		return nil, errBadGateway
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if err := parseError(string(data)); err != nil {
+			return nil, err
+		}
 		return nil, fmt.Errorf("discord: request %s returned status code %d (%s)", path, resp.StatusCode, string(data))
 	}
 	return data, nil
@@ -355,6 +388,11 @@ func retry(ctx context.Context, maxAttempts int, fn func() error) error {
 		// Increase attempts and check if we should stop
 		attempts++
 		if attempts >= maxAttempts {
+			return err
+		}
+		// If the error is not temporary, we stop
+		var discordErr Error
+		if errors.As(err, &discordErr) && !discordErr.Temporary() {
 			return err
 		}
 		// Bad gateway usually means discord is down, so we wait before retrying

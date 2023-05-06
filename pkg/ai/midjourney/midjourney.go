@@ -230,11 +230,16 @@ func parseEmbedFooter(prompt string, msg *discord.Message) (string, error) {
 	return fmt.Sprintf("%s%s", prompt, suffixes), nil
 }
 
+// Errors parsed from messages
 var ErrInvalidParameter = errors.New("invalid parameter")
 var ErrInvalidLink = errors.New("invalid link")
 var ErrBannedPrompt = errors.New("banned prompt")
 var ErrJobQueued = errors.New("job queued")
 var ErrQueueFull = errors.New("queue full")
+var ErrPendingMod = errors.New("pending mod message")
+
+// Other errors
+var ErrMessageNotFound = ai.NewError(errors.New("message not found"), false)
 
 func parseError(msg *discord.Message) error {
 	if len(msg.Embeds) == 0 {
@@ -251,7 +256,7 @@ func parseError(msg *discord.Message) error {
 	case "invalid link":
 		err := fmt.Errorf("midjourney: %w: %s", ErrInvalidLink, desc)
 		return ai.NewError(err, false)
-	case "banned prompt":
+	case "banned prompt", "banned prompt detected":
 		err := fmt.Errorf("midjourney: %w: %s", ErrBannedPrompt, desc)
 		return ai.NewError(err, false)
 	case "job queued":
@@ -260,6 +265,9 @@ func parseError(msg *discord.Message) error {
 	case "queue full":
 		err := fmt.Errorf("midjourney: %w: %s", ErrQueueFull, desc)
 		return ai.NewError(err, true)
+	case "pending mod message":
+		err := fmt.Errorf("midjourney: %w: %s", ErrPendingMod, desc)
+		return ai.NewFatal(err)
 	default:
 		err := fmt.Errorf("midjourney: %s: %s", title, desc)
 		return ai.NewError(err, true)
@@ -517,6 +525,10 @@ func (c *Client) Upscale(ctx context.Context, preview *ai.Preview, index int) (s
 		// response may be received before it finishes, due to rate limit
 		// locking.
 		if _, err := c.c.Do(ctx, "POST", "interactions", upscale); err != nil {
+			// Check if the message was deleted
+			if errors.Is(err, discord.ErrMessageNotFound) {
+				return ErrMessageNotFound
+			}
 			return fmt.Errorf("midjourney: couldn't send upscale interaction: %w", err)
 		}
 		return nil
@@ -553,6 +565,10 @@ func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) 
 		// response may be received before it finishes, due to rate limit
 		// locking.
 		if _, err := c.c.Do(ctx, "POST", "interactions", variation); err != nil {
+			// Check if the message was deleted
+			if errors.Is(err, discord.ErrMessageNotFound) {
+				return ErrMessageNotFound
+			}
 			return fmt.Errorf("midjourney: couldn't send variation interaction: %w", err)
 		}
 		return nil
