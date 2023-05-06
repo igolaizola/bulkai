@@ -43,12 +43,20 @@ type Image struct {
 type Error struct {
 	error
 	temporary bool
+	fatal     bool
 }
 
 func NewError(err error, temporary bool) Error {
 	return Error{
 		error:     err,
 		temporary: temporary,
+	}
+}
+
+func NewFatal(err error) Error {
+	return Error{
+		error: err,
+		fatal: true,
 	}
 }
 
@@ -62,6 +70,10 @@ func (e Error) Unwrap() error {
 
 func (e Error) Temporary() bool {
 	return e.temporary
+}
+
+func (e Error) Fatal() bool {
+	return e.fatal
 }
 
 type entry struct {
@@ -294,8 +306,13 @@ func retry(ctx context.Context, fn func(context.Context) error) error {
 		if err == nil {
 			return nil
 		}
-		// If the error is not temporary, return it
 		var aiErr Error
+		// If the error is fatal, stop everything
+		if errors.As(err, &aiErr) && aiErr.Fatal() {
+			// TODO: handle fatal errors
+			panic(err)
+		}
+		// If the error is not temporary, return it
 		if errors.As(err, &aiErr) && !aiErr.Temporary() {
 			return err
 		}
