@@ -237,6 +237,8 @@ var ErrBannedPrompt = errors.New("banned prompt")
 var ErrJobQueued = errors.New("job queued")
 var ErrQueueFull = errors.New("queue full")
 var ErrPendingMod = errors.New("pending mod message")
+var ErrActionRequired = errors.New("action required to continue")
+var ErrCompleteTask = errors.New("please complete the task")
 
 // Other errors
 var ErrMessageNotFound = ai.NewError(errors.New("message not found"), false)
@@ -267,6 +269,12 @@ func parseError(msg *discord.Message) error {
 		return ai.NewError(err, true)
 	case "pending mod message":
 		err := fmt.Errorf("midjourney: %w: %s", ErrPendingMod, desc)
+		return ai.NewFatal(err)
+	case "action required to continue":
+		err := fmt.Errorf("midjourney: %w: %s", ErrActionRequired, desc)
+		return ai.NewFatal(err)
+	case "please complete the task":
+		err := fmt.Errorf("midjourney: %w: %s", ErrCompleteTask, desc)
 		return ai.NewFatal(err)
 	default:
 		err := fmt.Errorf("midjourney: %s: %s", title, desc)
