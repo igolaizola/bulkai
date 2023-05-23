@@ -258,7 +258,7 @@ func parseError(msg *discord.Message) error {
 	case "invalid link":
 		err := fmt.Errorf("midjourney: %w: %s", ErrInvalidLink, desc)
 		return ai.NewError(err, false)
-	case "banned prompt", "banned prompt detected":
+	case "banned prompt", "banned prompt detected", "banned image prompt":
 		err := fmt.Errorf("midjourney: %w: %s", ErrBannedPrompt, desc)
 		return ai.NewError(err, false)
 	case "job queued":
