@@ -72,6 +72,7 @@ func newGenerateCommand() *ffcli.Command {
 	fs.IntVar(&cfg.Concurrency, "concurrency", 0, "concurrency (optional, if not provided the maximum for the bot will be used)")
 	fs.DurationVar(&cfg.Wait, "wait", 0, "wait time between prompts (optional)")
 	fs.BoolVar(&cfg.Debug, "debug", false, "debug mode")
+	fs.StringVar(&cfg.ReplicateToken, "replicate-token", "", "replicate token (optional)")
 
 	// Session
 	fs.StringVar(&cfg.SessionFile, "session", "session.yaml", "session config file (optional)")

@@ -14,6 +14,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/bwmarrin/snowflake"
+	"github.com/igolaizola/askimg"
 	"github.com/igolaizola/bulkai/pkg/ai"
 	"github.com/igolaizola/bulkai/pkg/discord"
 )
@@ -28,19 +29,20 @@ const (
 )
 
 type Client struct {
-	c         *discord.Client
-	debug     bool
-	node      *snowflake.Node
-	callback  map[search][]func(*discord.Message) bool
-	cache     map[string]struct{}
-	lck       sync.Mutex
-	channelID string
-	guildID   string
-	cmd       *discordgo.ApplicationCommand
-	validator Validator
+	c              *discord.Client
+	debug          bool
+	node           *snowflake.Node
+	callback       map[search][]func(*discord.Message) bool
+	cache          map[string]struct{}
+	lck            sync.Mutex
+	channelID      string
+	guildID        string
+	cmd            *discordgo.ApplicationCommand
+	validator      Validator
+	replicateToken string
 }
 
-func New(client *discord.Client, channelID string, debug bool) (ai.Client, error) {
+func New(client *discord.Client, channelID string, debug bool, replicateToken string) (ai.Client, error) {
 	node, err := snowflake.NewNode(0)
 	if err != nil {
 		return nil, fmt.Errorf("midjourney: couldn't create snowflake node")
@@ -65,14 +67,15 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 	}
 
 	c := &Client{
-		c:         client,
-		debug:     debug,
-		node:      node,
-		callback:  make(map[search][]func(*discord.Message) bool),
-		cache:     make(map[string]struct{}),
-		channelID: channelID,
-		guildID:   guildID,
-		validator: NewValidator(),
+		c:              client,
+		debug:          debug,
+		node:           node,
+		callback:       make(map[search][]func(*discord.Message) bool),
+		cache:          make(map[string]struct{}),
+		channelID:      channelID,
+		guildID:        guildID,
+		validator:      NewValidator(),
+		replicateToken: replicateToken,
 	}
 
 	c.c.OnEvent(func(e *discordgo.Event) {
@@ -87,6 +90,18 @@ func New(client *discord.Client, channelID string, debug bool) (ai.Client, error
 				return
 			}
 			c.debugLog(e.Type, e.RawData)
+
+			// Check action
+			ok, err := c.checkAction(&msg)
+			if err != nil {
+				js, _ := json.Marshal(msg)
+				log.Println(string(js))
+				log.Println(err)
+				panic("❌ midjourney: action required")
+			}
+			if ok {
+				return
+			}
 
 			var key search
 			var cacheID string
@@ -610,6 +625,79 @@ func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) 
 		MessageID:      msg.ID,
 		ImageIDs:       imageIDs,
 	}, nil
+}
+
+func (c *Client) checkAction(msg *discord.Message) (bool, error) {
+	if len(msg.Components) == 0 {
+		return false, nil
+	}
+	components := msg.Components[0].Components
+	if len(components) == 0 {
+		return false, nil
+	}
+	if !strings.HasPrefix(components[0].CustomID, "MJ::Captcha") {
+		return false, nil
+	}
+	if c.replicateToken == "" {
+		return false, fmt.Errorf("midjourney: action required")
+	}
+	if len(msg.Embeds) == 0 {
+		return false, fmt.Errorf("midjourney: missing embed in action")
+	}
+
+	image := msg.Embeds[0].URL
+	var options []string
+	for _, comp := range components {
+		options = append(options, strings.TrimSpace(strings.ToLower(comp.Label)))
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	question := fmt.Sprintf("Choose one: %s", strings.Join(options, ", "))
+	response, err := askimg.Ask(ctx, &askimg.Config{
+		Token:    c.replicateToken,
+		Image:    image,
+		Question: question,
+		Timeout:  1 * time.Minute,
+	})
+	if err != nil {
+		return false, fmt.Errorf("midjourney: couldn't ask image: %w", err)
+	}
+	response = strings.TrimSpace(strings.ToLower(response))
+	if response == "" {
+		return false, fmt.Errorf("midjourney: no response from image")
+	}
+
+	var match *int
+	for i, opt := range options {
+		if strings.HasPrefix(opt, response) || strings.HasPrefix(response, opt) {
+			match = &i
+			break
+		}
+	}
+	if match == nil {
+		return false, fmt.Errorf("midjourney: match not found (%s) in (%s)", response, strings.Join(options, ", "))
+	}
+
+	// Launch click button
+	click := &discord.InteractionComponent{
+		Type:          3,
+		Nonce:         c.node.Generate().String(),
+		GuildID:       c.guildID,
+		ChannelID:     c.channelID,
+		MessageID:     msg.ID,
+		ApplicationID: c.cmd.ApplicationID,
+		SessionID:     c.c.Session(),
+		Data: discord.InteractionComponentData{
+			ComponentType: 2,
+			CustomID:      components[*match].CustomID,
+		},
+	}
+	c.debugLog("CLICK", click)
+	if _, err := c.c.Do(ctx, "POST", "interactions", click); err != nil {
+		return false, fmt.Errorf("midjourney: couldn't send click interaction: %w", err)
+	}
+	return true, nil
 }
 
 var linkRegex = regexp.MustCompile(`https?://[^\s]+`)

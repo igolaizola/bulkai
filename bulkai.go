@@ -43,23 +43,24 @@ type Image struct {
 }
 
 type Config struct {
-	Debug       bool          `yaml:"debug"`
-	Bot         string        `yaml:"bot"`
-	Proxy       string        `yaml:"proxy"`
-	Output      string        `yaml:"output"`
-	Album       string        `yaml:"album"`
-	Prefix      string        `yaml:"prefix"`
-	Suffix      string        `yaml:"suffix"`
-	Prompts     []string      `yaml:"prompts"`
-	Variation   bool          `yaml:"variation"`
-	Upscale     bool          `yaml:"upscale"`
-	Download    bool          `yaml:"download"`
-	Thumbnail   bool          `yaml:"thumbnail"`
-	Channel     string        `yaml:"channel"`
-	Concurrency int           `yaml:"concurrency"`
-	Wait        time.Duration `yaml:"wait"`
-	SessionFile string        `yaml:"session"`
-	Session     Session       `yaml:"-"`
+	Debug          bool          `yaml:"debug"`
+	Bot            string        `yaml:"bot"`
+	Proxy          string        `yaml:"proxy"`
+	Output         string        `yaml:"output"`
+	Album          string        `yaml:"album"`
+	Prefix         string        `yaml:"prefix"`
+	Suffix         string        `yaml:"suffix"`
+	Prompts        []string      `yaml:"prompts"`
+	Variation      bool          `yaml:"variation"`
+	Upscale        bool          `yaml:"upscale"`
+	Download       bool          `yaml:"download"`
+	Thumbnail      bool          `yaml:"thumbnail"`
+	Channel        string        `yaml:"channel"`
+	Concurrency    int           `yaml:"concurrency"`
+	Wait           time.Duration `yaml:"wait"`
+	ReplicateToken string        `yaml:"replicate-token"`
+	SessionFile    string        `yaml:"session"`
+	Session        Session       `yaml:"-"`
 }
 
 type Session struct {
@@ -126,7 +127,9 @@ func Generate(ctx context.Context, cfg *Config, opts ...Option) error {
 	case "bluewillow":
 		newCli = bluewillow.New
 	case "midjourney":
-		newCli = midjourney.New
+		newCli = func(c *discord.Client, channelID string, debug bool) (ai.Client, error) {
+			return midjourney.New(c, channelID, debug, cfg.ReplicateToken)
+		}
 	default:
 		return fmt.Errorf("unsupported bot: %s", cfg.Bot)
 	}
