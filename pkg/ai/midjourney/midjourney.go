@@ -644,8 +644,14 @@ func (c *Client) checkAction(msg *discord.Message) (bool, error) {
 	if len(msg.Embeds) == 0 {
 		return false, fmt.Errorf("midjourney: missing embed in action")
 	}
+	if msg.Embeds[0].Image == nil {
+		return false, fmt.Errorf("midjourney: missing image in embed")
+	}
+	image := msg.Embeds[0].Image.URL
+	if image == "" {
+		return false, fmt.Errorf("midjourney: missing image url in embed")
+	}
 
-	image := msg.Embeds[0].URL
 	var options []string
 	for _, comp := range components {
 		options = append(options, strings.TrimSpace(strings.ToLower(comp.Label)))
