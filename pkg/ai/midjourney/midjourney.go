@@ -668,6 +668,22 @@ func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) 
 }
 
 func (c *Client) checkAction(msg *discord.Message) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	// Send ACK to message
+	ack := struct {
+		Token      *string `json:"token"`
+		LastViewed int64   `json:"last_viewed"`
+	}{
+		Token:      nil,
+		LastViewed: 3070,
+	}
+	method := fmt.Sprintf("channels/%s/messages/%s/ack", msg.ChannelID, msg.ID)
+	if _, err := c.c.Do(ctx, "POST", method, ack); err != nil {
+		return false, fmt.Errorf("midjourney: couldn't send click interaction: %w", err)
+	}
+
 	if len(msg.Components) == 0 {
 		return false, nil
 	}
@@ -697,8 +713,6 @@ func (c *Client) checkAction(msg *discord.Message) (bool, error) {
 		options = append(options, strings.TrimSpace(strings.ToLower(comp.Label)))
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
 	question := fmt.Sprintf("Choose one: %s", strings.Join(options, ", "))
 	response, err := askimg.Ask(ctx, &askimg.Config{
 		Token:    c.replicateToken,
@@ -739,6 +753,7 @@ func (c *Client) checkAction(msg *discord.Message) (bool, error) {
 		MessageID:     msg.ID,
 		ApplicationID: c.cmd.ApplicationID,
 		SessionID:     c.c.Session(),
+		MessageFlags:  0,
 		Data: discord.InteractionComponentData{
 			ComponentType: 2,
 			CustomID:      components[match].CustomID,

@@ -30,6 +30,7 @@ type InteractionComponent struct {
 	SessionID     string                   `json:"session_id"`
 	Data          InteractionComponentData `json:"data"`
 	Nonce         string                   `json:"nonce,omitempty"`
+	MessageFlags  int                      `json:"message_flags"`
 	MessageID     string                   `json:"message_id"`
 }
 type InteractionComponentData struct {

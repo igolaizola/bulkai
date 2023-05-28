@@ -247,7 +247,7 @@ func (c *Client) do(method string, path string, body interface{}) ([]byte, error
 		if err != nil {
 			return nil, fmt.Errorf("discord: couldn't marshal body: %w", err)
 		}
-		if path == "interactions" {
+		if _, ok := body.(*InteractionCommand); ok && path == "interactions" {
 			js, webkitID = webkitForm(js)
 		}
 		r = bytes.NewReader(js)
@@ -257,7 +257,7 @@ func (c *Client) do(method string, path string, body interface{}) ([]byte, error
 	if err != nil {
 		return nil, fmt.Errorf("discord: couldn't create request: %w", err)
 	}
-	c.addHeaders(req)
+	c.addHeaders(req, webkitID != "")
 	if webkitID != "" {
 		req.Header.Set("content-type", fmt.Sprintf("multipart/form-data; boundary=----WebKitFormBoundary%s", webkitID))
 	}
@@ -326,7 +326,7 @@ func (c *Client) download(ctx context.Context, u string, output string) error {
 	if err != nil {
 		return fmt.Errorf("discord: couldn't create request: %w", err)
 	}
-	c.addHeaders(req)
+	c.addHeaders(req, false)
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("discord: couldn't do request %s: %w", u, err)
@@ -435,7 +435,7 @@ func webkitID(length int) string {
 	return string(b)
 }
 
-func (c *Client) addHeaders(req *http.Request) {
+func (c *Client) addHeaders(req *http.Request, form bool) {
 	// Add headers
 	switch req.URL.Host {
 	case "cdn.discordapp.com":
@@ -455,18 +455,33 @@ func (c *Client) addHeaders(req *http.Request) {
 		}
 		switch req.URL.Path {
 		case "/api/v9/interactions":
-			req.Header = http.Header{
-				"accept":             {"*/*"},
-				"accept-encoding":    {"gzip, deflate, br"},
-				"authorization":      {c.token},
-				"origin":             {"https://discord.com"},
-				"referer":            {referer},
-				"sec-fetch-dest":     {"empty"},
-				"sec-fetch-mode":     {"cors"},
-				"sec-fetch-site":     {"same-origin"},
-				"x-debug-options":    {"bugReporterEnabled"},
-				"x-discord-locale":   {c.locale},
-				"x-super-properties": {c.superProperties.raw},
+			if form {
+				req.Header = http.Header{
+					"accept":             {"*/*"},
+					"accept-encoding":    {"gzip, deflate, br"},
+					"authorization":      {c.token},
+					"origin":             {"https://discord.com"},
+					"referer":            {referer},
+					"sec-fetch-dest":     {"empty"},
+					"sec-fetch-mode":     {"cors"},
+					"sec-fetch-site":     {"same-origin"},
+					"x-debug-options":    {"bugReporterEnabled"},
+					"x-discord-locale":   {c.locale},
+					"x-super-properties": {c.superProperties.raw},
+				}
+			} else {
+				req.Header = http.Header{
+					"accept":             {"*/*"},
+					"authorization":      {c.token},
+					"content-type":       {"application/json"},
+					"referer":            {referer},
+					"sec-fetch-dest":     {"empty"},
+					"sec-fetch-mode":     {"cors"},
+					"sec-fetch-site":     {"same-origin"},
+					"x-debug-options":    {"bugReporterEnabled"},
+					"x-discord-locale":   {c.locale},
+					"x-super-properties": {c.superProperties.raw},
+				}
 			}
 
 		default:
