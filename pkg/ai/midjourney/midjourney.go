@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -40,6 +41,8 @@ type Client struct {
 	cmd            *discordgo.ApplicationCommand
 	validator      Validator
 	replicateToken string
+	dumps          []string
+	dumpLock       sync.Mutex
 }
 
 func New(client *discord.Client, channelID string, debug bool, replicateToken string) (ai.Client, error) {
@@ -97,6 +100,8 @@ func New(client *discord.Client, channelID string, debug bool, replicateToken st
 				js, _ := json.Marshal(msg)
 				log.Println(string(js))
 				log.Println(err)
+				c.debugLog("ERR", err)
+				c.saveDump()
 				panic("❌ midjourney: action required")
 			}
 			if ok {
@@ -207,7 +212,37 @@ func (c *Client) debugLog(t string, v interface{}) {
 		return
 	}
 	js, _ := json.Marshal(v)
+
+	// Save dump
+	c.dumpLock.Lock()
+	dumps := append(c.dumps, string(js))
+	if len(dumps) > 100 {
+		dumps = dumps[len(dumps)-100:]
+	}
+	c.dumpLock.Unlock()
+
 	log.Println(t, string(js))
+}
+
+func (c *Client) saveDump() {
+	c.dumpLock.Lock()
+	defer c.dumpLock.Unlock()
+	var output string
+	for _, dump := range c.dumps {
+		output += dump + "\n"
+	}
+	// Create logs directory if it doesn't exist
+	if err := os.MkdirAll("logs", 0755); err != nil {
+		log.Println("midjourney: couldn't create logs directory:", err)
+		return
+	}
+	// Save dump using the current time
+	now := time.Now()
+	filename := fmt.Sprintf("logs/dump_%s.txt", now.Format("20060102_150405"))
+	if err := os.WriteFile(filename, []byte(output), 0644); err != nil {
+		log.Println("midjourney: couldn't save dump:", err)
+		return
+	}
 }
 
 func parseContent(content string) (string, string, bool) {
@@ -669,19 +704,24 @@ func (c *Client) checkAction(msg *discord.Message) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("midjourney: couldn't ask image: %w", err)
 	}
+	c.debugLog("ASK", struct {
+		Question string `json:"question"`
+		Response string `json:"response"`
+	}{Question: question, Response: response})
+
 	response = strings.TrimSpace(strings.ToLower(response))
 	if response == "" {
 		return false, fmt.Errorf("midjourney: no response from image")
 	}
 
-	var match *int
+	match := -1
 	for i, opt := range options {
 		if strings.HasPrefix(opt, response) || strings.HasPrefix(response, opt) {
-			match = &i
+			match = i
 			break
 		}
 	}
-	if match == nil {
+	if match < 0 {
 		return false, fmt.Errorf("midjourney: match not found (%s) in (%s)", response, strings.Join(options, ", "))
 	}
 
@@ -696,13 +736,14 @@ func (c *Client) checkAction(msg *discord.Message) (bool, error) {
 		SessionID:     c.c.Session(),
 		Data: discord.InteractionComponentData{
 			ComponentType: 2,
-			CustomID:      components[*match].CustomID,
+			CustomID:      components[match].CustomID,
 		},
 	}
 	c.debugLog("CLICK", click)
 	if _, err := c.c.Do(ctx, "POST", "interactions", click); err != nil {
 		return false, fmt.Errorf("midjourney: couldn't send click interaction: %w", err)
 	}
+	log.Printf("✅ midjourney: action completed (%s) %d %s %s\n", strings.Join(options, ","), match, response, image)
 	return true, nil
 }
 
