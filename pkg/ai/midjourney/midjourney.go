@@ -204,11 +204,10 @@ func (c *Client) Concurrency() int {
 }
 
 func (c *Client) debugLog(t string, v interface{}) {
-	if !c.debug {
-		return
-	}
 	if v == nil {
-		log.Println(t)
+		if c.debug {
+			log.Println(t)
+		}
 		return
 	}
 	js, _ := json.Marshal(v)
@@ -221,7 +220,9 @@ func (c *Client) debugLog(t string, v interface{}) {
 	}
 	c.dumpLock.Unlock()
 
-	log.Println(t, string(js))
+	if c.debug {
+		log.Println(t, string(js))
+	}
 }
 
 func (c *Client) saveDump() {
