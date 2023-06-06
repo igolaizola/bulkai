@@ -285,6 +285,7 @@ func parseEmbedFooter(prompt string, msg *discord.Message) (string, error) {
 var ErrInvalidParameter = errors.New("invalid parameter")
 var ErrInvalidLink = errors.New("invalid link")
 var ErrBannedPrompt = errors.New("banned prompt")
+var ErrActionNeeded = errors.New("action needed to continue")
 var ErrJobQueued = errors.New("job queued")
 var ErrQueueFull = errors.New("queue full")
 var ErrPendingMod = errors.New("pending mod message")
@@ -311,6 +312,9 @@ func parseError(msg *discord.Message) error {
 		return ai.NewError(err, false)
 	case "banned prompt", "banned prompt detected", "banned image prompt":
 		err := fmt.Errorf("midjourney: %w: %s", ErrBannedPrompt, desc)
+		return ai.NewError(err, false)
+	case "action needed to continue":
+		err := fmt.Errorf("midjourney: %w: %s", ErrActionNeeded, desc)
 		return ai.NewError(err, false)
 	case "job queued":
 		err := fmt.Errorf("midjourney: %w: %s", ErrJobQueued, desc)
