@@ -111,7 +111,8 @@ If you want include prompts from a file, just write the path to the file.
 If unset a time based name will be used.
  - `output` (string): Path to the output directory. (default: `./output`)
  - `session` (string): Path to the session file. (default: `./session.json`)
- - `channel` (string): Name of the channel to use in the form `guild/channel`. (optional)
+ - `channel` (string): ID of the channel to use in the form `guild-id/channel-id`. (optional)
+You can obtain it from the URL of the channel in discord web.
 If unset the DM chat with the bot will be used.
  - `proxy` (string): Proxy to use in HTTP calls. (optional)
  - `concurrency` (int): How many prompts can be running at the same time. (optional)
