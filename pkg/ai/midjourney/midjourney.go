@@ -21,12 +21,14 @@ import (
 )
 
 const (
-	botID           = "936929561302675456"
-	upscaleTerm     = "Upscaled by"
-	imageNumberTerm = "Image #"
-	variationTerm   = "Variations by"
-	upscaleID       = "MJ::JOB::upsample::"
-	variationID     = "MJ::JOB::variation::"
+	botID               = "936929561302675456"
+	upscaleTerm         = "Upscaled by"
+	imageNumberTerm     = "Image #"
+	variationTerm       = "Variations by"
+	variationSubtleTerm = "Variations (Subtle) by"
+	variationStrongTerm = "Variations (Strong) by"
+	upscaleID           = "MJ::JOB::upsample::"
+	variationID         = "MJ::JOB::variation::"
 )
 
 type Client struct {
@@ -141,7 +143,7 @@ func New(client *discord.Client, channelID string, debug bool, replicateToken st
 				switch {
 				case strings.Contains(rest, upscaleTerm) || strings.Contains(rest, imageNumberTerm):
 					key = upscaleSearch(prompt)
-				case strings.Contains(rest, variationTerm):
+				case strings.Contains(rest, variationTerm) || strings.Contains(rest, variationSubtleTerm) || strings.Contains(rest, variationStrongTerm):
 					key = variationSearch(prompt)
 				default:
 					key = previewSearch(prompt)
