@@ -293,6 +293,9 @@ var ErrQueueFull = errors.New("queue full")
 var ErrPendingMod = errors.New("pending mod message")
 var ErrActionRequired = errors.New("action required to continue")
 var ErrCompleteTask = errors.New("please complete the task")
+var ErrInvalidRequest = errors.New("invalid request")
+var ErrJobActionRestricted = errors.New("job action restricted")
+var ErrEmptyPrompt = errors.New("empty prompt")
 
 // Other errors
 var ErrMessageNotFound = ai.NewError(errors.New("message not found"), false)
@@ -332,6 +335,15 @@ func parseError(msg *discord.Message) error {
 		return ai.NewFatal(err)
 	case "please complete the task":
 		err := fmt.Errorf("midjourney: %w: %s", ErrCompleteTask, desc)
+		return ai.NewFatal(err)
+	case "invalid request":
+		err := fmt.Errorf("midjourney: %w: %s", ErrInvalidRequest, desc)
+		return ai.NewFatal(err)
+	case "job action restricted":
+		err := fmt.Errorf("midjourney: %w: %s", ErrJobActionRestricted, desc)
+		return ai.NewFatal(err)
+	case "empty prompt":
+		err := fmt.Errorf("midjourney: %w: %s", ErrEmptyPrompt, desc)
 		return ai.NewFatal(err)
 	default:
 		err := fmt.Errorf("midjourney: %s: %s", title, desc)
