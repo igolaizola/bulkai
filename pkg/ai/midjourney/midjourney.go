@@ -517,7 +517,7 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("midjourney: couldn't receive imagine response: %w", err)
+		return nil, fmt.Errorf("midjourney: couldn't receive imagine response (%s): %w", nonce, err)
 	}
 
 	// Parse prompt
@@ -540,13 +540,22 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 		}
 	}
 
+	if responsePrompt == "" {
+		// Sometimes the response doesn't contain the prompt, as a workaround
+		// we use the original prompt for these cases.
+		// TODO: use `response.Interaction.ID` to get the next update message
+		// and parse the prompt from there.
+		log.Printf("midjourney: empty response prompt, using original (%s)\n", prompt)
+		responsePrompt = prompt
+	}
+
 	// The response prompt links may differ from the final links, so we need to
 	// replace them with placeholders.
 	responsePrompt = replaceLinks(responsePrompt)
 
 	preview, err := c.receiveMessage(ctx, previewSearch(responsePrompt), nil)
 	if err != nil {
-		return nil, fmt.Errorf("midjourney: couldn't receive links message: %w", err)
+		return nil, fmt.Errorf("midjourney: couldn't receive links message for (%s): %w", responsePrompt, err)
 	}
 
 	var imageIDs []string
