@@ -164,11 +164,27 @@ func New(client *discord.Client, channelID string, debug bool, replicateToken st
 				if _, _, ok := parseContent(msg.Content); !ok {
 					// Check if there is an error message
 					if err := parseError(&msg); err == nil {
-						return
+						// Check if there is interaction data
+						if msg.Interaction == nil || msg.Interaction.ID == "" {
+							return
+						}
 					}
 				}
 
 				key = nonceSearch(msg.Nonce)
+			case msg.Interaction != nil && msg.Interaction.ID != "" && msg.Interaction.Name == "imagine":
+				// Interaction based message
+				cacheID = msg.Interaction.ID
+
+				// Ignore message already in the cache
+				c.lck.Lock()
+				_, ok := c.cache[cacheID]
+				c.lck.Unlock()
+				if ok {
+					return
+				}
+
+				key = interactionSearch(msg.Interaction.ID)
 			}
 
 			// Search for matching callbacks
@@ -379,6 +395,12 @@ func (s nonceSearch) value() string {
 	return string(s)
 }
 
+type interactionSearch string
+
+func (s interactionSearch) value() string {
+	return string(s)
+}
+
 func (c *Client) receiveMessage(parent context.Context, key search, fn func() error) (*discord.Message, error) {
 	msgChan := make(chan *discord.Message)
 	defer close(msgChan)
@@ -535,18 +557,19 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 			}
 		case err != nil:
 			return nil, err
+		case response.Interaction != nil && response.Interaction.ID != "":
+			// Search the response prompt by the interaction id
+			response, err := c.receiveMessage(ctx, interactionSearch(response.Interaction.ID), nil)
+			if err != nil {
+				return nil, fmt.Errorf("midjourney: couldn't receive imagine response (%s): %w", nonce, err)
+			}
+			responsePrompt, _, ok = parseContent(response.Content)
+			if !ok {
+				return nil, fmt.Errorf("midjourney: couldn't parse prompt from update message: %s", response.Content)
+			}
 		default:
 			return nil, fmt.Errorf("midjourney: couldn't parse prompt from imagine response: %s", response.Content)
 		}
-	}
-
-	if responsePrompt == "" {
-		// Sometimes the response doesn't contain the prompt, as a workaround
-		// we use the original prompt for these cases.
-		// TODO: use `response.Interaction.ID` to get the next update message
-		// and parse the prompt from there.
-		log.Printf("midjourney: empty response prompt, using original (%s)\n", prompt)
-		responsePrompt = prompt
 	}
 
 	// The response prompt links may differ from the final links, so we need to

@@ -69,6 +69,15 @@ type Message struct {
 
 	// A list of embeds present in the message.
 	Embeds []*discordgo.MessageEmbed `json:"embeds"`
+
+	// Interaction data
+	Interaction *Interaction `json:"interaction"`
+}
+
+type Interaction struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type int    `json:"type"`
 }
 
 type Component struct {
