@@ -216,9 +216,9 @@ func (c *Client) debugLog(t string, v interface{}) {
 
 	// Save dump
 	c.dumpLock.Lock()
-	dumps := append(c.dumps, string(js))
-	if len(dumps) > 100 {
-		dumps = dumps[len(dumps)-100:]
+	c.dumps = append(c.dumps, string(js))
+	if len(c.dumps) > 100 {
+		c.dumps = c.dumps[len(c.dumps)-100:]
 	}
 	c.dumpLock.Unlock()
 
