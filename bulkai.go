@@ -125,10 +125,19 @@ func Generate(ctx context.Context, cfg *Config, opts ...Option) error {
 	var cli ai.Client
 	switch strings.ToLower(cfg.Bot) {
 	case "bluewillow":
-		newCli = bluewillow.New
+		newCli = func(c *discord.Client, channelID string, debug bool) (ai.Client, error) {
+			return bluewillow.New(c, &bluewillow.Config{
+				ChannelID: channelID,
+				Debug:     debug,
+			})
+		}
 	case "midjourney":
 		newCli = func(c *discord.Client, channelID string, debug bool) (ai.Client, error) {
-			return midjourney.New(c, channelID, debug, cfg.ReplicateToken)
+			return midjourney.New(c, &midjourney.Config{
+				ChannelID:      channelID,
+				Debug:          debug,
+				ReplicateToken: cfg.ReplicateToken,
+			})
 		}
 	default:
 		return fmt.Errorf("unsupported bot: %s", cfg.Bot)
