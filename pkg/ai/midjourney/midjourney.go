@@ -45,14 +45,25 @@ type Client struct {
 	replicateToken string
 	dumps          []string
 	dumpLock       sync.Mutex
+	timeout        time.Duration
+	queuedTimeout  time.Duration
 }
 
-func New(client *discord.Client, channelID string, debug bool, replicateToken string) (ai.Client, error) {
+type Config struct {
+	Debug          bool
+	ChannelID      string
+	ReplicateToken string
+	Timeout        time.Duration
+	QueuedTimeout  time.Duration
+}
+
+func New(client *discord.Client, cfg *Config) (ai.Client, error) {
 	node, err := snowflake.NewNode(0)
 	if err != nil {
 		return nil, fmt.Errorf("midjourney: couldn't create snowflake node")
 	}
 
+	channelID := cfg.ChannelID
 	if channelID == "" {
 		channelID = client.DM(botID)
 		if channelID == "" {
@@ -71,16 +82,27 @@ func New(client *discord.Client, channelID string, debug bool, replicateToken st
 		client.Referer = fmt.Sprintf("channels/@me/%s", channelID)
 	}
 
+	timeout := cfg.Timeout
+	if timeout == 0 {
+		timeout = 10 * time.Minute
+	}
+	queuedTimeout := cfg.QueuedTimeout
+	if queuedTimeout == 0 {
+		queuedTimeout = 20 * time.Minute
+	}
+
 	c := &Client{
 		c:              client,
-		debug:          debug,
+		debug:          cfg.Debug,
 		node:           node,
 		callback:       make(map[search][]func(*discord.Message) bool),
 		cache:          make(map[string]struct{}),
 		channelID:      channelID,
 		guildID:        guildID,
 		validator:      NewValidator(),
-		replicateToken: replicateToken,
+		replicateToken: cfg.ReplicateToken,
+		timeout:        timeout,
+		queuedTimeout:  queuedTimeout,
 	}
 
 	c.c.OnEvent(func(e *discordgo.Event) {
@@ -401,7 +423,7 @@ func (s interactionSearch) value() string {
 	return string(s)
 }
 
-func (c *Client) receiveMessage(parent context.Context, key search, fn func() error) (*discord.Message, error) {
+func (c *Client) receiveMessage(parent context.Context, key search, timeout time.Duration, fn func() error) (*discord.Message, error) {
 	msgChan := make(chan *discord.Message)
 	defer close(msgChan)
 	c.lck.Lock()
@@ -426,7 +448,7 @@ func (c *Client) receiveMessage(parent context.Context, key search, fn func() er
 	}
 
 	// Add a timeout to receive the message
-	ctx, cancel := context.WithTimeout(parent, 10*time.Minute)
+	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 
 	select {
@@ -529,7 +551,9 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 	}
 	c.debugLog("IMAGINE", imagine)
 
-	response, err := c.receiveMessage(ctx, nonceSearch(nonce), func() error {
+	timeout := c.timeout
+
+	response, err := c.receiveMessage(ctx, nonceSearch(nonce), timeout, func() error {
 		// Launch interaction inside the receive message process because the
 		// response may be received before it finishes, due to rate limit
 		// locking.
@@ -555,11 +579,12 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 			if err != nil {
 				return nil, err
 			}
+			timeout = c.queuedTimeout
 		case err != nil:
 			return nil, err
 		case response.Interaction != nil && response.Interaction.ID != "":
 			// Search the response prompt by the interaction id
-			response, err := c.receiveMessage(ctx, interactionSearch(response.Interaction.ID), nil)
+			response, err := c.receiveMessage(ctx, interactionSearch(response.Interaction.ID), timeout, nil)
 			if err != nil {
 				return nil, fmt.Errorf("midjourney: couldn't receive imagine response (%s): %w", nonce, err)
 			}
@@ -576,7 +601,7 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 	// replace them with placeholders.
 	responsePrompt = replaceLinks(responsePrompt)
 
-	preview, err := c.receiveMessage(ctx, previewSearch(responsePrompt), nil)
+	preview, err := c.receiveMessage(ctx, previewSearch(responsePrompt), timeout, nil)
 	if err != nil {
 		return nil, fmt.Errorf("midjourney: couldn't receive links message for (%s): %w", responsePrompt, err)
 	}
@@ -629,7 +654,7 @@ func (c *Client) Upscale(ctx context.Context, preview *ai.Preview, index int) (s
 	}
 	c.debugLog("UPSCALE", upscale)
 
-	msg, err := c.receiveMessage(ctx, upscaleSearch(preview.ResponsePrompt), func() error {
+	msg, err := c.receiveMessage(ctx, upscaleSearch(preview.ResponsePrompt), c.timeout, func() error {
 		// Launch interaction inside the receive message process because the
 		// response may be received before it finishes, due to rate limit
 		// locking.
@@ -669,7 +694,7 @@ func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) 
 	}
 	c.debugLog("VARIATION", variation)
 
-	msg, err := c.receiveMessage(ctx, variationSearch(preview.ResponsePrompt), func() error {
+	msg, err := c.receiveMessage(ctx, variationSearch(preview.ResponsePrompt), c.timeout, func() error {
 		// Launch interaction inside the receive message process because the
 		// response may be received before it finishes, due to rate limit
 		// locking.
