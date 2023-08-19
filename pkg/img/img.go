@@ -64,7 +64,7 @@ func Split4(input string, outputs []string) error {
 			}
 
 			// Crop image
-			cropped := image.NewRGBA(image.Rect(0, 0, width, height))
+			cropped := image.NewNRGBA(image.Rect(0, 0, width, height))
 			draw.Draw(cropped, cropped.Bounds(), img, image.Point{x*width + incX, y*height + incY}, draw.Src)
 
 			// Encode image
@@ -130,7 +130,7 @@ func Resize(div int, path, output string) error {
 	bounds := img.Bounds()
 	width := bounds.Max.X / div
 	height := bounds.Max.Y / div
-	resized := image.NewRGBA(image.Rect(0, 0, width, height))
+	resized := image.NewNRGBA(image.Rect(0, 0, width, height))
 	draw.CatmullRom.Scale(resized, resized.Bounds(), img, bounds, draw.Over, nil)
 
 	// Encode image
