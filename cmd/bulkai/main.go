@@ -68,6 +68,7 @@ func newGenerateCommand() *ffcli.Command {
 	fs.BoolVar(&cfg.Download, "download", true, "download images")
 	fs.BoolVar(&cfg.Upscale, "upscale", true, "upscale images")
 	fs.BoolVar(&cfg.Thumbnail, "thumbnail", true, "generate thumbnails")
+	fs.BoolVar(&cfg.Html, "html", true, "generate html files")
 	fs.StringVar(&cfg.Channel, "channel", "", "channel in format guid/channel (optional, if not provided DMs will be used)")
 	fs.IntVar(&cfg.Concurrency, "concurrency", 0, "concurrency (optional, if not provided the maximum for the bot will be used)")
 	fs.DurationVar(&cfg.Wait, "wait", 0, "wait time between prompts (optional)")
