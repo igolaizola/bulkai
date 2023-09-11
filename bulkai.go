@@ -55,6 +55,7 @@ type Config struct {
 	Upscale        bool          `yaml:"upscale"`
 	Download       bool          `yaml:"download"`
 	Thumbnail      bool          `yaml:"thumbnail"`
+	Html           bool          `yaml:"html"`
 	Channel        string        `yaml:"channel"`
 	Concurrency    int           `yaml:"concurrency"`
 	Wait           time.Duration `yaml:"wait"`
@@ -309,7 +310,7 @@ func Generate(ctx context.Context, cfg *Config, opts ...Option) error {
 				}
 			}
 		}
-		if err := SaveAlbum(albumDir, album, cfg.Thumbnail); err != nil {
+		if err := SaveAlbum(albumDir, album, cfg.Thumbnail, cfg.Html); err != nil {
 			return fmt.Errorf("couldn't save album: %w", err)
 		}
 		log.Println("album created:", albumDir)
@@ -363,7 +364,7 @@ func Generate(ctx context.Context, cfg *Config, opts ...Option) error {
 		album.Percentage = percentage
 		album.Status = status
 
-		err := SaveAlbum(albumDir, album, cfg.Thumbnail)
+		err := SaveAlbum(albumDir, album, cfg.Thumbnail, cfg.Html)
 		lck.Unlock()
 		if err != nil {
 			return fmt.Errorf("couldn't generate html: %w", err)
@@ -495,7 +496,7 @@ type htmlImage struct {
 	Prompt string
 }
 
-func SaveAlbum(dir string, a *Album, thumbnail bool) error {
+func SaveAlbum(dir string, a *Album, thumbnail bool, html bool) error {
 	// Sort images
 	images := a.Images
 	sort.Slice(images, func(i, j int) bool {
@@ -509,6 +510,11 @@ func SaveAlbum(dir string, a *Album, thumbnail bool) error {
 	}
 	if err := os.WriteFile(fmt.Sprintf("%s/data.json", dir), js, 0644); err != nil {
 		return fmt.Errorf("couldn't write album: %w", err)
+	}
+
+	// Skip to generate html files
+	if !html {
+		return nil
 	}
 
 	var local htmlData
