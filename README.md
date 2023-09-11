@@ -103,6 +103,7 @@ This will generate 4 extra variations of each prompt.
 The generation will be much slower.
  - `thumbnail` (bool): Generate thumbnails of the generated images. (default: `true`)
 This operation is done locally, it will improve the performance of the HTML page.
+ - `html` (bool): Generate HTML files to show and link the generated images. (default: `true`)
  - `suffix` (string): Suffix to add to all prompts. (optional)
  - `prefix` (string): Prefix to add to all prompts. (optional)
  - `prompt` (list): List of prompts to use. (required)
