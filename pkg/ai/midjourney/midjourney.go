@@ -240,7 +240,7 @@ func New(client *discord.Client, cfg *Config) (ai.Client, error) {
 }
 
 func (c *Client) Concurrency() int {
-	return 3
+	return 12
 }
 
 func (c *Client) debugLog(t string, v interface{}) {
