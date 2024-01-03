@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"regexp"
 	"strings"
@@ -479,23 +478,20 @@ func (c *Client) Start(ctx context.Context) error {
 			return fmt.Errorf("midjourney: couldn't find application id for user %s", botID)
 		}
 
-		u = fmt.Sprintf("channels/%s/application-commands/search?type=1&include_applications=true", c.channelID)
+		u = fmt.Sprintf("channels/%s/application-command-index", c.channelID)
 		resp, err = c.c.Do(ctx, "GET", u, nil)
 		if err != nil {
-			return fmt.Errorf("midjourney: couldn't get application command search: %w", err)
+			return fmt.Errorf("midjourney: couldn't get channel application commands: %w", err)
 		}
 		if err := json.Unmarshal(resp, &appSearch); err != nil {
 			return fmt.Errorf("midjourney: couldn't unmarshal application command search %s: %w", string(resp), err)
 		}
 	default:
 		// Search for command in a guild channel
-		typings := []string{"im", "ima", "imag", "imagi", "imagin"}
-		typing := typings[rand.Intn(len(typings))]
-
-		u := fmt.Sprintf("channels/%s/application-commands/search?type=1&query=%s&limit=7&include_applications=false", c.channelID, typing)
+		u := fmt.Sprintf("guilds/%s/application-command-index", c.guildID)
 		resp, err := c.c.Do(ctx, "GET", u, nil)
 		if err != nil {
-			return fmt.Errorf("midjourney: couldn't get application command search: %w", err)
+			return fmt.Errorf("midjourney: couldn't get guild application commands: %w", err)
 		}
 		if err := json.Unmarshal(resp, &appSearch); err != nil {
 			return fmt.Errorf("midjourney: couldn't unmarshal application command search %s: %w", string(resp), err)
