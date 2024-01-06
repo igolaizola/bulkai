@@ -131,39 +131,40 @@ func Run(ctx context.Context, profile bool, output, proxy string) error {
 	// obtain user agent
 	var userAgent, acceptLanguage string
 	if err := chromedp.Run(ctx,
-		chromedp.Navigate(scrapfly.InfoHTTPURL),
+		chromedp.Navigate(scrapfly.FPAkamaiURL),
 		chromedp.WaitReady("body", chromedp.ByQuery),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			node, err := dom.GetDocument().Do(ctx)
 			if err != nil {
-				return err
+				return fmt.Errorf("couldn't get document: %w", err)
 			}
 			res, err := dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
 			if err != nil {
-				return err
+				return fmt.Errorf("couldn't get outer html: %w", err)
 			}
 			doc, err := goquery.NewDocumentFromReader(bytes.NewBuffer([]byte(res)))
 			if err != nil {
-				return err
+				return fmt.Errorf("couldn't create document: %w", err)
 			}
 			body := doc.Find("body").Text()
 			if body == "" {
 				return errors.New("couldn't obtain info http")
 			}
-			var infoHTTP scrapfly.InfoHTTP
-			if err := json.Unmarshal([]byte(body), &infoHTTP); err != nil {
-				return err
+			var infoHTTP2 scrapfly.InfoHTTP2
+			log.Println(body)
+			if err := json.Unmarshal([]byte(body), &infoHTTP2); err != nil {
+				return fmt.Errorf("couldn't unmarshal info http: %w", err)
 			}
-			userAgent = infoHTTP.Headers.UserAgent.Payload
+			userAgent = infoHTTP2.Headers["user-agent"]
 			if userAgent == "" {
 				return errors.New("empty user agent")
 			}
 			log.Println("user-agent:", userAgent)
-			v, ok := infoHTTP.Headers.ParsedHeaders["Accept-Language"]
+			v, ok := infoHTTP2.Headers["accept-language"]
 			if !ok || len(v) == 0 {
 				return errors.New("empty accept language")
 			}
-			acceptLanguage = v[0]
+			acceptLanguage = strings.Split(v, ",")[0]
 			log.Println("language:", acceptLanguage)
 			return nil
 		}),
