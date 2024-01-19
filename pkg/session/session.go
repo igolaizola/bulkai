@@ -91,48 +91,33 @@ func Run(ctx context.Context, profile bool, output, proxy string) error {
 	// obtain ja3
 	var ja3 string
 	if err := chromedp.Run(ctx,
-		chromedp.Navigate(scrapfly.FPJA3URL),
-		chromedp.WaitReady("body", chromedp.ByQuery),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			node, err := dom.GetDocument().Do(ctx)
-			if err != nil {
-				return err
-			}
-			res, err := dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
-			if err != nil {
-				return err
-			}
-			doc, err := goquery.NewDocumentFromReader(bytes.NewBuffer([]byte(res)))
-			if err != nil {
-				return err
-			}
-			body := doc.Find("body").Text()
-			if body == "" {
-				return errors.New("couldn't obtain fp ja3")
-			}
-			var fpJA3 scrapfly.FPJA3
-			if err := json.Unmarshal([]byte(body), &fpJA3); err != nil {
-				return err
-			}
-			ja3 = fpJA3.JA3
-			if ja3 == "" {
-				return errors.New("empty ja3")
-			}
-			log.Println("ja3:", ja3)
-			return nil
-		}),
+		chromedp.Navigate(scrapfly.FPJA3WebURL),
+		chromedp.WaitReady("#ja3", chromedp.ByQuery),
 	); err != nil {
-		return fmt.Errorf("could not obtain ja3: %w", err)
+		return fmt.Errorf("could not navigate to ja3 page: %w", err)
 	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(1 * time.Second):
+	}
+	var fpJA3 scrapfly.FPJA3
+	if err := chromedp.Run(ctx,
+		chromedp.Evaluate(`window.fingerprint`, &fpJA3),
+	); err != nil {
+		return fmt.Errorf("could not obtain fingerprint: %w", err)
+	}
+	ja3 = fpJA3.JA3
 	if ja3 == "" {
 		return errors.New("empty ja3")
 	}
+	log.Println("ja3:", ja3)
 
 	// obtain user agent
 	var userAgent, acceptLanguage string
 	if err := chromedp.Run(ctx,
-		chromedp.Navigate(scrapfly.FPAkamaiURL),
-		chromedp.WaitReady("body", chromedp.ByQuery),
+		chromedp.Navigate(scrapfly.FPHTTP2WebURL),
+		chromedp.WaitReady("#http2_headers_frame pre", chromedp.ByQuery),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			node, err := dom.GetDocument().Do(ctx)
 			if err != nil {
@@ -146,7 +131,7 @@ func Run(ctx context.Context, profile bool, output, proxy string) error {
 			if err != nil {
 				return fmt.Errorf("couldn't create document: %w", err)
 			}
-			body := doc.Find("body").Text()
+			body := doc.Find("#http2_headers_frame pre").Text()
 			if body == "" {
 				return errors.New("couldn't obtain info http")
 			}
@@ -155,7 +140,13 @@ func Run(ctx context.Context, profile bool, output, proxy string) error {
 			if err := json.Unmarshal([]byte(body), &infoHTTP2); err != nil {
 				return fmt.Errorf("couldn't unmarshal info http: %w", err)
 			}
-			userAgent = infoHTTP2.Headers["user-agent"]
+			if len(infoHTTP2.Headers) == 0 {
+				return errors.New("empty headers")
+			}
+			if _, ok := infoHTTP2.Headers["user-agent"]; !ok {
+				return errors.New("empty user agent")
+			}
+			userAgent = infoHTTP2.Headers["user-agent"][0]
 			if userAgent == "" {
 				return errors.New("empty user agent")
 			}
@@ -164,7 +155,7 @@ func Run(ctx context.Context, profile bool, output, proxy string) error {
 			if !ok || len(v) == 0 {
 				return errors.New("empty accept language")
 			}
-			acceptLanguage = strings.Split(v, ",")[0]
+			acceptLanguage = strings.Split(v[0], ",")[0]
 			log.Println("language:", acceptLanguage)
 			return nil
 		}),

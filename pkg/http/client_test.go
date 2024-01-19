@@ -63,7 +63,7 @@ func TestBrowser(t *testing.T) {
 		"user-agent": userAgent,
 	}
 	for k, v := range want {
-		if headers[k] != v {
+		if headers[k][0] != v {
 			t.Errorf("header %s got %s, want %s", k, headers[k], v)
 		}
 	}
@@ -153,7 +153,7 @@ func TestHeaders(t *testing.T) {
 	}
 	var got string
 	for k, v := range infoHTTP2.Headers {
-		got += k + ": " + v + " "
+		got += k + ": " + v[0] + " "
 	}
 	if got != want {
 		t.Errorf("got  %s\nwant %s", got, want)
