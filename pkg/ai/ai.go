@@ -212,14 +212,14 @@ func Bulk(ctx context.Context, cli Client, prompts []string, skip []int, variati
 
 func (i *Image) FileName() string {
 	prompt := fixString(i.Prompt)
-	ext := filepath.Ext(i.URL)
+	ext := filepath.Ext(strings.Split(i.URL, "?")[0])
 	return fmt.Sprintf("%s_%05d_%02d%s", prompt, i.PromptIndex, i.ImageIndex, ext)
 }
 
 func (i *Image) FileNames() []string {
 	var names []string
 	prompt := fixString(i.Prompt)
-	ext := filepath.Ext(i.URL)
+	ext := filepath.Ext(strings.Split(i.URL, "?")[0])
 	for j := 0; j < 4; j++ {
 		names = append(names, fmt.Sprintf("%s_%05d_%02d%s", prompt, i.PromptIndex, i.ImageIndex+j, ext))
 	}

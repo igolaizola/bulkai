@@ -621,7 +621,7 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 		return nil, fmt.Errorf("midjourney: message has no image ids")
 	}
 	return &ai.Preview{
-		URL:            cleanURL(preview.Attachments[0].URL),
+		URL:            preview.Attachments[0].URL,
 		Prompt:         prompt,
 		ResponsePrompt: responsePrompt,
 		MessageID:      preview.ID,
@@ -666,7 +666,7 @@ func (c *Client) Upscale(ctx context.Context, preview *ai.Preview, index int) (s
 	if err != nil {
 		return "", fmt.Errorf("midjourney: couldn't receive links message: %w", err)
 	}
-	return cleanURL(msg.Attachments[0].URL), nil
+	return msg.Attachments[0].URL, nil
 }
 
 func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) (*ai.Preview, error) {
@@ -726,7 +726,7 @@ func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) 
 		return nil, fmt.Errorf("midjourney: message has no image ids")
 	}
 	return &ai.Preview{
-		URL:            cleanURL(msg.Attachments[0].URL),
+		URL:            msg.Attachments[0].URL,
 		Prompt:         preview.Prompt,
 		ResponsePrompt: preview.ResponsePrompt,
 		MessageID:      msg.ID,
@@ -754,7 +754,7 @@ func (c *Client) checkAction(msg *discord.Message) (bool, error) {
 	if msg.Embeds[0].Image == nil {
 		return false, fmt.Errorf("midjourney: missing image in embed")
 	}
-	image := cleanURL(msg.Embeds[0].Image.URL)
+	image := msg.Embeds[0].Image.URL
 	if image == "" {
 		return false, fmt.Errorf("midjourney: missing image url in embed")
 	}
@@ -828,9 +828,5 @@ func replaceLinks(s string) string {
 }
 
 func cleanURL(u string) string {
-	// Remove query string
-	if i := strings.Index(u, "?"); i >= 0 {
-		u = u[:i]
-	}
-	return u
+	return strings.Split(u, "?")[0]
 }
