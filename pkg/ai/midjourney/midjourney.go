@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -46,6 +47,7 @@ type Client struct {
 	dumpLock       sync.Mutex
 	timeout        time.Duration
 	queuedTimeout  time.Duration
+	discordCDN     bool
 }
 
 type Config struct {
@@ -54,6 +56,7 @@ type Config struct {
 	ReplicateToken string
 	Timeout        time.Duration
 	QueuedTimeout  time.Duration
+	DiscordCDN     bool
 }
 
 func New(client *discord.Client, cfg *Config) (ai.Client, error) {
@@ -102,6 +105,7 @@ func New(client *discord.Client, cfg *Config) (ai.Client, error) {
 		replicateToken: cfg.ReplicateToken,
 		timeout:        timeout,
 		queuedTimeout:  queuedTimeout,
+		discordCDN:     cfg.DiscordCDN,
 	}
 
 	c.c.OnEvent(func(e *discordgo.Event) {
@@ -666,7 +670,18 @@ func (c *Client) Upscale(ctx context.Context, preview *ai.Preview, index int) (s
 	if err != nil {
 		return "", fmt.Errorf("midjourney: couldn't receive links message: %w", err)
 	}
-	return msg.Attachments[0].URL, nil
+
+	// Use midjourney cdn if discord cdn is disabled
+	u := msg.Attachments[0].URL
+	if !c.discordCDN {
+		mjURL, err := toMidjourneyCDN(preview.ImageIDs[index])
+		if err != nil {
+			log.Println(err)
+		} else {
+			u = mjURL
+		}
+	}
+	return u, nil
 }
 
 func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) (*ai.Preview, error) {
@@ -829,4 +844,24 @@ func replaceLinks(s string) string {
 
 func cleanURL(u string) string {
 	return strings.Split(u, "?")[0]
+}
+
+func toMidjourneyCDN(imageID string) (string, error) {
+	split := strings.Split(imageID, "::")
+	if len(split) != 2 {
+		return "", fmt.Errorf("midjourney: couldn't split image id: %s", imageID)
+	}
+	index, err := strconv.Atoi(split[0])
+	if err != nil {
+		return "", fmt.Errorf("midjourney: couldn't convert index %s: %w", split[0], err)
+	}
+	if index < 1 || index > 4 {
+		return "", fmt.Errorf("midjourney: invalid index %d", index)
+	}
+	index--
+	id := split[1]
+	if id == "" {
+		return "", fmt.Errorf("midjourney: empty id")
+	}
+	return fmt.Sprintf("https://cdn.midjourney.com/%s/0_%d.png", id, index), nil
 }

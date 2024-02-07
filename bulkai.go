@@ -60,6 +60,7 @@ type Config struct {
 	Concurrency    int           `yaml:"concurrency"`
 	Wait           time.Duration `yaml:"wait"`
 	ReplicateToken string        `yaml:"replicate-token"`
+	DiscordCDN     bool          `yaml:"discord-cdn"`
 	SessionFile    string        `yaml:"session"`
 	Session        Session       `yaml:"-"`
 }
@@ -138,6 +139,7 @@ func Generate(ctx context.Context, cfg *Config, opts ...Option) error {
 				ChannelID:      channelID,
 				Debug:          debug,
 				ReplicateToken: cfg.ReplicateToken,
+				DiscordCDN:     cfg.DiscordCDN,
 			})
 		}
 	default:
