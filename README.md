@@ -1,8 +1,10 @@
-# bulkai
+# bulkai 🤖🎨
 
 **bulkai** is a tool to generate AI images in bulk
 
-## Features
+> 📢 Connect with us! Join our Telegram group for support and collaboration: [t.me/igolaizola_com](https://t.me/igolaizola_com)
+
+## 🚀 Features
 
 **bulkai** works with the following AI image generators:
 
@@ -19,7 +21,7 @@
  - Create thumbnails
  - Generate a HTML album page with the generated images
 
-## Installation
+## 📦 Installation
 
 You can use the golang binary to install **bulkai**:
 
@@ -29,7 +31,7 @@ go install github.com/igolaizola/bulkai/cmd/bulkai@latest
 
 Or you can download the binary from the [releases](https://github.com/igolaizola/bulkai/releases)
 
-## Usage 
+## 🕹️ Usage 
 
 ### 1. Create session (only for the first time)
 
@@ -87,7 +89,7 @@ You can press `Ctrl+C` to stop the generation.
 If you want to resume the generation, just press launch the command again using the same settings and album name.
 Prompt field will be ignored and the prompts will be loaded from the album.
 
-## Parameters
+## 🛠️ Parameters
 
 Here is a list of all the parameters available to run the image generation.
 
@@ -123,7 +125,7 @@ There is already a rate limit implemented to avoid sending too many requests to 
  - `discord-cdn` (bool): Use Discord CDN for URLs instead of Midjourney CDN URLs. (default: `false`)
  - `debug` (bool): Enable debug mode. (default: `false`)
 
-## FAQ
+## ❓ FAQ
 
 ### Do I need to generate a new session every time I want to use use **bulkai**?
 
@@ -134,14 +136,14 @@ No, you only need to generate a new session if you want to use a different accou
 It is up to you to use relaxed or fast mode.
 Just keep in mind that if you use fast mode with a lot of prompts, you may consume your quota very quickly.
 
-## I'm getting `couldn't find dm channel for bot` error
+### I'm getting `couldn't find dm channel for bot` error
 
 You must manually join the discord server of the bot you want to use.
 Then you have to open a DM chat with the bot.
 Alternatively, you can specify the channel to use in the form `guild/channel`.
 The bot must be available in the channel you specify.
 
-## Disclaimer
+## ⚠️ Disclaimer
 
 The automation of User Discord accounts also known as self-bots is a violation of Discord Terms of Service & Community guidelines and will result in your account(s) being terminated.
 
@@ -152,7 +154,7 @@ Read about Discord, Midjourney and Bluewillow Terms of Service and Community Gui
 **bulkai** was written as a proof of concept and the code has been released for educational purposes only.
 The authors are released of any liabilities which your usage may entail.
 
-## Support
+## 💖 Support
 
 If you have found my code helpful, please give the repository a star ⭐
 
@@ -184,7 +186,7 @@ Or donate to any of my crypto addresses:
 
 Thanks for your support!
 
-## Resources
+## 📚 Resources
 
 Some of the resources I used to create this project:
 
