@@ -120,6 +120,7 @@ If unset the DM chat with the bot will be used.
 If unset the maximum for the bot will be used.
  - `wait` (duration): Time to wait between prompts, for example `5s`. (optional)
 There is already a rate limit implemented to avoid sending too many requests to discord.
+ - `discord-cdn` (bool): Use Discord CDN for URLs instead of Midjourney CDN URLs. (default: `false`)
  - `debug` (bool): Enable debug mode. (default: `false`)
 
 ## FAQ
