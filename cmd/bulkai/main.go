@@ -74,7 +74,7 @@ func newGenerateCommand() *ffcli.Command {
 	fs.DurationVar(&cfg.Wait, "wait", 0, "wait time between prompts (optional)")
 	fs.BoolVar(&cfg.Debug, "debug", false, "debug mode")
 	fs.StringVar(&cfg.ReplicateToken, "replicate-token", "", "replicate token (optional)")
-	fs.BoolVar(&cfg.DiscordCDN, "discord-cdn", false, "use discord cdn instead of midjourney cdn")
+	fs.BoolVar(&cfg.MidjourneyCDN, "midjourney-cdn", false, "use midjourney cdn instead of discord cdn")
 
 	// Session
 	fs.StringVar(&cfg.SessionFile, "session", "session.yaml", "session config file (optional)")

@@ -47,7 +47,7 @@ type Client struct {
 	dumpLock       sync.Mutex
 	timeout        time.Duration
 	queuedTimeout  time.Duration
-	discordCDN     bool
+	midjourneyCDN  bool
 }
 
 type Config struct {
@@ -56,7 +56,7 @@ type Config struct {
 	ReplicateToken string
 	Timeout        time.Duration
 	QueuedTimeout  time.Duration
-	DiscordCDN     bool
+	MidjourneyCDN  bool
 }
 
 func New(client *discord.Client, cfg *Config) (ai.Client, error) {
@@ -105,7 +105,7 @@ func New(client *discord.Client, cfg *Config) (ai.Client, error) {
 		replicateToken: cfg.ReplicateToken,
 		timeout:        timeout,
 		queuedTimeout:  queuedTimeout,
-		discordCDN:     cfg.DiscordCDN,
+		midjourneyCDN:  cfg.MidjourneyCDN,
 	}
 
 	c.c.OnEvent(func(e *discordgo.Event) {
@@ -633,9 +633,9 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 	}, nil
 }
 
-func (c *Client) Upscale(ctx context.Context, preview *ai.Preview, index int) (string, error) {
+func (c *Client) Upscale(ctx context.Context, preview *ai.Preview, index int) ([]string, error) {
 	if index < 0 || index >= len(preview.ImageIDs) {
-		return "", fmt.Errorf("midjourney: invalid index %d", index)
+		return nil, fmt.Errorf("midjourney: invalid index %d", index)
 	}
 	customID := fmt.Sprintf("%s%s", upscaleID, preview.ImageIDs[index])
 	nonce := c.node.Generate().String()
@@ -668,20 +668,20 @@ func (c *Client) Upscale(ctx context.Context, preview *ai.Preview, index int) (s
 		return nil
 	})
 	if err != nil {
-		return "", fmt.Errorf("midjourney: couldn't receive links message: %w", err)
+		return nil, fmt.Errorf("midjourney: couldn't receive links message: %w", err)
 	}
 
-	// Use midjourney cdn if discord cdn is disabled
-	u := msg.Attachments[0].URL
-	if !c.discordCDN {
-		mjURL, err := toMidjourneyCDN(preview.ImageIDs[index])
-		if err != nil {
-			log.Println(err)
-		} else {
-			u = mjURL
-		}
+	discordURL := msg.Attachments[0].URL
+	mjURL, err := toMidjourneyCDN(preview.ImageIDs[index])
+	if err != nil {
+		return nil, err
 	}
-	return u, nil
+	urls := []string{discordURL, mjURL}
+	// Give priority to midjourney CDN URL if enabled
+	if c.midjourneyCDN {
+		urls = []string{mjURL, discordURL}
+	}
+	return urls, nil
 }
 
 func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) (*ai.Preview, error) {
@@ -853,10 +853,10 @@ func toMidjourneyCDN(imageID string) (string, error) {
 	}
 	index, err := strconv.Atoi(split[0])
 	if err != nil {
-		return "", fmt.Errorf("midjourney: couldn't convert index %s: %w", split[0], err)
+		return "", fmt.Errorf("midjourney: couldn't convert image index %s: %w", split[0], err)
 	}
 	if index < 1 || index > 4 {
-		return "", fmt.Errorf("midjourney: invalid index %d", index)
+		return "", fmt.Errorf("midjourney: invalid image index %d", index)
 	}
 	index--
 	id := split[1]
