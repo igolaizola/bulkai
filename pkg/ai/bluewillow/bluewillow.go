@@ -414,9 +414,9 @@ func (c *Client) Imagine(ctx context.Context, prompt string) (*ai.Preview, error
 	}, nil
 }
 
-func (c *Client) Upscale(ctx context.Context, preview *ai.Preview, index int) (string, error) {
+func (c *Client) Upscale(ctx context.Context, preview *ai.Preview, index int) ([]string, error) {
 	if index < 0 || index >= len(preview.ImageIDs) {
-		return "", fmt.Errorf("bluewillow: invalid index %d", index)
+		return nil, fmt.Errorf("bluewillow: invalid index %d", index)
 	}
 	customID := fmt.Sprintf("%s%s", upscaleID, preview.ImageIDs[index])
 	nonce := c.node.Generate().String()
@@ -445,9 +445,9 @@ func (c *Client) Upscale(ctx context.Context, preview *ai.Preview, index int) (s
 		return nil
 	})
 	if err != nil {
-		return "", fmt.Errorf("bluewillow: couldn't receive links message: %w", err)
+		return nil, fmt.Errorf("bluewillow: couldn't receive links message: %w", err)
 	}
-	return msg.Attachments[0].URL, nil
+	return []string{msg.Attachments[0].URL}, nil
 }
 
 func (c *Client) Variation(ctx context.Context, preview *ai.Preview, index int) (*ai.Preview, error) {

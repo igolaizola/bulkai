@@ -25,7 +25,7 @@ type Preview struct {
 type Client interface {
 	Start(ctx context.Context) error
 	Imagine(ctx context.Context, prompt string) (*Preview, error)
-	Upscale(ctx context.Context, preview *Preview, index int) (string, error)
+	Upscale(ctx context.Context, preview *Preview, index int) ([]string, error)
 	Variation(ctx context.Context, preview *Preview, index int) (*Preview, error)
 	Concurrency() int
 }
@@ -274,7 +274,7 @@ func upscale(cli Client, ctx context.Context, preview *Preview, index int) (stri
 		if err != nil {
 			return err
 		}
-		upscaleURL = u
+		upscaleURL = u[0]
 		return nil
 	}); err != nil {
 		return "", err
