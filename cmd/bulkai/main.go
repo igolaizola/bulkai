@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/igolaizola/bulkai"
+	"github.com/igolaizola/bulkai/pkg/cmd/refresh"
 	"github.com/igolaizola/bulkai/pkg/session"
 	"github.com/peterbourgon/ff/v3"
 	"github.com/peterbourgon/ff/v3/ffcli"
@@ -46,6 +47,7 @@ func newCommand() *ffcli.Command {
 		Subcommands: []*ffcli.Command{
 			newGenerateCommand(),
 			newCreateSessionCommand(),
+			newRefreshCommand(),
 			newVersionCommand(),
 		},
 	}
@@ -112,6 +114,49 @@ func newGenerateCommand() *ffcli.Command {
 				last = curr
 				fmt.Printf("{\"progress\": \"%d\", \"estimated\": \"%s\"}\n", curr, s.Estimated)
 			}))
+		},
+	}
+}
+
+func newRefreshCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("refresh", flag.ExitOnError)
+	_ = fs.String("config", "", "config file (optional)")
+
+	cfg := &refresh.Config{}
+
+	fs.StringVar(&cfg.Proxy, "proxy", "", "proxy address (optional)")
+	fs.StringVar(&cfg.Input, "input", "input", "input file")
+	fs.StringVar(&cfg.Output, "output", "output", "output file")
+	fs.DurationVar(&cfg.Wait, "wait", 0, "wait time between requests (optional)")
+	fs.BoolVar(&cfg.Debug, "debug", false, "debug mode")
+
+	// Session
+	fs.StringVar(&cfg.SessionFile, "session", "session.yaml", "session config file (optional)")
+
+	fsSession := flag.NewFlagSet("", flag.ExitOnError)
+	for _, fs := range []*flag.FlagSet{fs, fsSession} {
+		fs.StringVar(&cfg.Session.UserAgent, "user-agent", "", "user agent")
+		fs.StringVar(&cfg.Session.JA3, "ja3", "", "ja3 fingerprint")
+		fs.StringVar(&cfg.Session.Language, "language", "", "language")
+		fs.StringVar(&cfg.Session.Token, "token", "", "authentication token")
+		fs.StringVar(&cfg.Session.SuperProperties, "super-properties", "", "super properties")
+		fs.StringVar(&cfg.Session.Locale, "locale", "", "locale")
+		fs.StringVar(&cfg.Session.Cookie, "cookie", "", "cookie")
+	}
+
+	return &ffcli.Command{
+		Name:       "refresh",
+		ShortUsage: "bulkai refresh [flags] <key> <value data...>",
+		Options: []ff.Option{
+			ff.WithConfigFileFlag("config"),
+			ff.WithConfigFileParser(ffyaml.Parser),
+			ff.WithEnvVarPrefix("BULKAI"),
+		},
+		ShortHelp: "refresh discord CDN URLs in a file",
+		FlagSet:   fs,
+		Exec: func(ctx context.Context, args []string) error {
+			loadSession(fsSession, cfg.SessionFile)
+			return refresh.Run(ctx, cfg)
 		},
 	}
 }

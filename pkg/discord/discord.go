@@ -468,7 +468,21 @@ func (c *Client) addHeaders(req *http.Request) {
 				"x-discord-locale":   {c.locale},
 				"x-super-properties": {c.superProperties.raw},
 			}
-
+		case "/api/v9/attachments/refresh-urls":
+			req.Header = http.Header{
+				"accept":             {"*/*"},
+				"accept-encoding":    {"gzip, deflate, br"},
+				"authorization":      {c.token},
+				"content-type":       {"application/json"},
+				"origin":             {"https://discord.com"},
+				"referer":            {referer},
+				"sec-fetch-dest":     {"empty"},
+				"sec-fetch-mode":     {"cors"},
+				"sec-fetch-site":     {"same-origin"},
+				"x-debug-options":    {"bugReporterEnabled"},
+				"x-discord-locale":   {c.locale},
+				"x-super-properties": {c.superProperties.raw},
+			}
 		default:
 			req.Header = http.Header{
 				"accept":             {"*/*"},
@@ -489,6 +503,7 @@ func (c *Client) addHeaders(req *http.Request) {
 		"accept",
 		"accept-encoding",
 		"accept-language",
+		"content-type",
 		"cookie",
 		"origin",
 		"referer",
