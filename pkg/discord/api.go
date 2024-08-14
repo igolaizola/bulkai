@@ -105,6 +105,32 @@ type UserApplication struct {
 }
 
 type ApplicationCommandSearch struct {
-	Applications []*discordgo.Application        `json:"applications"`
+	Applications []*Application                  `json:"applications"`
 	Commands     []*discordgo.ApplicationCommand `json:"application_commands"`
+}
+
+// Application stores values for a Discord Application
+//
+// This has been modified from the original discordgo.Application in order to
+// fix the `Flags` field which used to be an int and is now a string. We left it
+// as an `any` type to avoid breaking changes.
+type Application struct {
+	ID                  string          `json:"id,omitempty"`
+	Name                string          `json:"name"`
+	Icon                string          `json:"icon,omitempty"`
+	Description         string          `json:"description,omitempty"`
+	RPCOrigins          []string        `json:"rpc_origins,omitempty"`
+	BotPublic           bool            `json:"bot_public,omitempty"`
+	BotRequireCodeGrant bool            `json:"bot_require_code_grant,omitempty"`
+	TermsOfServiceURL   string          `json:"terms_of_service_url"`
+	PrivacyProxyURL     string          `json:"privacy_policy_url"`
+	Owner               *User           `json:"owner"`
+	Summary             string          `json:"summary"`
+	VerifyKey           string          `json:"verify_key"`
+	Team                *discordgo.Team `json:"team"`
+	GuildID             string          `json:"guild_id"`
+	PrimarySKUID        string          `json:"primary_sku_id"`
+	Slug                string          `json:"slug"`
+	CoverImage          string          `json:"cover_image"`
+	Flags               any             `json:"flags,omitempty"`
 }
