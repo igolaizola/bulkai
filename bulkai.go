@@ -21,7 +21,7 @@ import (
 	"github.com/igolaizola/bulkai/pkg/ai/bluewillow"
 	"github.com/igolaizola/bulkai/pkg/ai/midjourney"
 	"github.com/igolaizola/bulkai/pkg/discord"
-	"github.com/igolaizola/bulkai/pkg/http"
+	"github.com/igolaizola/bulkai/pkg/fhttp"
 	"github.com/igolaizola/bulkai/pkg/img"
 	"gopkg.in/yaml.v2"
 )
@@ -104,18 +104,19 @@ func Generate(ctx context.Context, cfg *Config, opts ...Option) error {
 	if cfg.Output == "" {
 		return errors.New("missing output directory")
 	}
-	if cfg.Session.JA3 == "" {
-		return errors.New("missing ja3")
-	}
-	if cfg.Session.UserAgent == "" {
-		return errors.New("missing user agent")
-	}
 	if cfg.Session.Cookie == "" {
 		return errors.New("missing cookie")
 	}
-	if cfg.Session.Language == "" {
-		return errors.New("missing language")
-	}
+	// These values are now fixed
+	// if cfg.Session.JA3 == "" {
+	// 	return errors.New("missing ja3")
+	// }
+	// if cfg.Session.UserAgent == "" {
+	// 	return errors.New("missing user agent")
+	// }
+	// if cfg.Session.Language == "" {
+	// 	return errors.New("missing language")
+	// }
 
 	// Load options
 	o := &option{}
@@ -231,7 +232,7 @@ func Generate(ctx context.Context, cfg *Config, opts ...Option) error {
 	}
 
 	// Create http client
-	httpClient, err := http.NewClient(cfg.Session.JA3, cfg.Session.UserAgent, cfg.Session.Language, cfg.Proxy)
+	httpClient, err := fhttp.NewClient(1*time.Minute, true, cfg.Proxy)
 	if err != nil {
 		return fmt.Errorf("couldn't create http client: %w", err)
 	}
@@ -244,11 +245,11 @@ func Generate(ctx context.Context, cfg *Config, opts ...Option) error {
 		os.Setenv("HTTP_PROXY", p)
 	}
 
-	if err := http.SetCookies(httpClient, "https://discord.com", cfg.Session.Cookie); err != nil {
+	if err := fhttp.SetCookies(httpClient, "https://discord.com", cfg.Session.Cookie); err != nil {
 		return fmt.Errorf("couldn't set cookies: %w", err)
 	}
 	defer func() {
-		cookie, err := http.GetCookies(httpClient, "https://discord.com")
+		cookie, err := fhttp.GetCookies(httpClient, "https://discord.com")
 		if err != nil {
 			log.Printf("couldn't get cookies: %v\n", err)
 		}
