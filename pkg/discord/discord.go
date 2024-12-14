@@ -2,8 +2,6 @@ package discord
 
 import (
 	"bytes"
-	"compress/gzip"
-	"compress/zlib"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -19,9 +17,9 @@ import (
 	"sync"
 	"time"
 
-	http "github.com/Danny-Dasilva/fhttp"
-	"github.com/andybalholm/brotli"
+	http "github.com/bogdanfinn/fhttp"
 	"github.com/bwmarrin/discordgo"
+	"github.com/igolaizola/bulkai/pkg/fhttp"
 )
 
 type Client struct {
@@ -32,7 +30,7 @@ type Client struct {
 	superProperties *SuperProperties
 	locale          string
 	userAgent       string
-	client          *http.Client
+	client          fhttp.Client
 	session         *discordgo.Session
 	callbacks       []func(*discordgo.Event)
 	dm              map[string]string
@@ -49,7 +47,7 @@ type Config struct {
 	Locale          string
 	UserAgent       string
 	Referer         string
-	HTTPClient      *http.Client
+	HTTPClient      fhttp.Client
 	Dialer          func(ctx context.Context, network, addr string) (net.Conn, error)
 	Debug           bool
 }
@@ -269,22 +267,23 @@ func (c *Client) do(method string, path string, body interface{}) ([]byte, error
 	defer resp.Body.Close()
 
 	// Handle compression
-	var respBody io.Reader
-	respBody = resp.Body
-	switch resp.Header.Get("content-encoding") {
-	case "br":
-		respBody = brotli.NewReader(resp.Body)
-	case "gzip":
-		respBody, err = gzip.NewReader(resp.Body)
-		if err != nil {
-			return nil, fmt.Errorf("discord: couldn't create gzip reader: %w", err)
-		}
-	case "deflate":
-		respBody, err = zlib.NewReader(resp.Body)
-		if err != nil {
-			return nil, fmt.Errorf("discord: couldn't create zlib reader: %w", err)
-		}
-	}
+	respBody := resp.Body.(io.Reader)
+
+	// TODO: fix compression
+	//switch resp.Header.Get("content-encoding") {
+	//case "br":
+	//	respBody = brotli.NewReader(resp.Body)
+	//case "gzip":
+	//	respBody, err = gzip.NewReader(resp.Body)
+	//	if err != nil {
+	//		return nil, fmt.Errorf("discord: couldn't create gzip reader: %w", err)
+	//	}
+	//case "deflate":
+	//	respBody, err = zlib.NewReader(resp.Body)
+	//	if err != nil {
+	//		return nil, fmt.Errorf("discord: couldn't create zlib reader: %w", err)
+	//	}
+	//}
 
 	data, err := io.ReadAll(respBody)
 	if err != nil {
@@ -334,22 +333,22 @@ func (c *Client) download(ctx context.Context, u string, output string) error {
 	defer resp.Body.Close()
 
 	// Handle compression
-	var respBody io.Reader
-	respBody = resp.Body
-	switch resp.Header.Get("content-encoding") {
-	case "br":
-		respBody = brotli.NewReader(resp.Body)
-	case "gzip":
-		respBody, err = gzip.NewReader(resp.Body)
-		if err != nil {
-			return fmt.Errorf("discord: couldn't create gzip reader: %w", err)
-		}
-	case "deflate":
-		respBody, err = zlib.NewReader(resp.Body)
-		if err != nil {
-			return fmt.Errorf("discord: couldn't create zlib reader: %w", err)
-		}
-	}
+	respBody := resp.Body.(io.Reader)
+	// TODO: fix compression
+	//switch resp.Header.Get("content-encoding") {
+	//case "br":
+	//	respBody = brotli.NewReader(resp.Body)
+	//case "gzip":
+	//	respBody, err = gzip.NewReader(resp.Body)
+	//	if err != nil {
+	//		return fmt.Errorf("discord: couldn't create gzip reader: %w", err)
+	//	}
+	//case "deflate":
+	//	respBody, err = zlib.NewReader(resp.Body)
+	//	if err != nil {
+	//		return fmt.Errorf("discord: couldn't create zlib reader: %w", err)
+	//	}
+	//}
 
 	if resp.StatusCode == http.StatusBadGateway {
 		return errBadGateway
@@ -440,8 +439,9 @@ func (c *Client) addHeaders(req *http.Request) {
 	switch req.URL.Host {
 	case "cdn.discordapp.com":
 		req.Header = http.Header{
-			"accept":                    {"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"},
-			"accept-encoding":           {"gzip, deflate, br"},
+			"accept": {"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"},
+			// TODO: fix compression
+			//"accept-encoding":           {"gzip, deflate, br"},
 			"sec-fetch-dest":            {"document"},
 			"sec-fetch-mode":            {"navigate"},
 			"sec-fetch-site":            {"none"},
@@ -456,8 +456,9 @@ func (c *Client) addHeaders(req *http.Request) {
 		switch req.URL.Path {
 		case "/api/v9/interactions":
 			req.Header = http.Header{
-				"accept":             {"*/*"},
-				"accept-encoding":    {"gzip, deflate, br"},
+				"accept": {"*/*"},
+				// TODO: fix compression
+				//"accept-encoding":           {"gzip, deflate, br"},
 				"authorization":      {c.token},
 				"origin":             {"https://discord.com"},
 				"referer":            {referer},
@@ -470,8 +471,9 @@ func (c *Client) addHeaders(req *http.Request) {
 			}
 		case "/api/v9/attachments/refresh-urls":
 			req.Header = http.Header{
-				"accept":             {"*/*"},
-				"accept-encoding":    {"gzip, deflate, br"},
+				"accept": {"*/*"},
+				// TODO: fix compression
+				//"accept-encoding":           {"gzip, deflate, br"},
 				"authorization":      {c.token},
 				"content-type":       {"application/json"},
 				"origin":             {"https://discord.com"},
@@ -485,8 +487,9 @@ func (c *Client) addHeaders(req *http.Request) {
 			}
 		default:
 			req.Header = http.Header{
-				"accept":             {"*/*"},
-				"accept-encoding":    {"gzip, deflate, br"},
+				"accept": {"*/*"},
+				// TODO: fix compression
+				//"accept-encoding":           {"gzip, deflate, br"},
 				"authorization":      {c.token},
 				"referer":            {referer},
 				"sec-fetch-dest":     {"empty"},
