@@ -100,7 +100,7 @@ type UserProfile struct {
 
 type UserApplication struct {
 	ID       string `json:"id"`
-	Flags    int    `json:"flags"`
+	Flags    any    `json:"flags"`
 	Verified bool   `json:"verified"`
 }
 
