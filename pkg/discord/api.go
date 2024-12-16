@@ -99,9 +99,9 @@ type UserProfile struct {
 }
 
 type UserApplication struct {
-	ID       string `json:"id"`
-	Flags    any    `json:"flags"`
-	Verified bool   `json:"verified"`
+	ID string `json:"id"`
+	// Flags    any    `json:"flags"`
+	Verified bool `json:"verified"`
 }
 
 type ApplicationCommandSearch struct {
@@ -112,8 +112,8 @@ type ApplicationCommandSearch struct {
 // Application stores values for a Discord Application
 //
 // This has been modified from the original discordgo.Application in order to
-// fix the `Flags` field which used to be an int and is now a string. We left it
-// as an `any` type to avoid breaking changes.
+// fix the `Flags` field which used to be an int and is now a string. We removed
+// it from the struct to avoid breaking changes.
 type Application struct {
 	ID                  string          `json:"id,omitempty"`
 	Name                string          `json:"name"`
@@ -132,5 +132,5 @@ type Application struct {
 	PrimarySKUID        string          `json:"primary_sku_id"`
 	Slug                string          `json:"slug"`
 	CoverImage          string          `json:"cover_image"`
-	Flags               any             `json:"flags,omitempty"`
+	// Flags               any             `json:"flags,omitempty"`
 }
