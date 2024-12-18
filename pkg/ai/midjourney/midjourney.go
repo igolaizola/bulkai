@@ -313,6 +313,8 @@ func parseEmbedFooter(prompt string, msg *discord.Message) (string, error) {
 		return "", fmt.Errorf("midjourney: footer doesn't start with /imagine: %s", footer)
 	}
 	footer = strings.TrimPrefix(footer, "/imagine ")
+	footer = strings.TrimSpace(footer)
+	prompt = strings.TrimSpace(prompt)
 	if !strings.HasPrefix(footer, prompt) {
 		return "", fmt.Errorf("midjourney: footer doesn't start with prompt: %s", footer)
 	}
