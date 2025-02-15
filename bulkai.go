@@ -395,7 +395,7 @@ func toImages(ctx context.Context, client *discord.Client, image *ai.Image, imgD
 	// Generate preview image
 	if upscale && preview {
 		base := filepath.Base(imgOutput)
-		base = base[:len(base)-len(filepath.Ext(base))]
+		base = strings.TrimSuffix(base, filepath.Ext(base))
 		previewOutput := fmt.Sprintf("%s/_thumbnails/%s.jpg", imgDir, base)
 		if err := img.Resize(8, imgOutput, previewOutput); err != nil {
 			log.Println(fmt.Errorf("❌ couldn't preview `%s`: %w", imgOutput, err))
@@ -433,7 +433,7 @@ func toImages(ctx context.Context, client *discord.Client, image *ai.Image, imgD
 	if preview {
 		for _, imgOutput := range imgOutputs {
 			base := filepath.Base(imgOutput)
-			base = base[:len(base)-len(filepath.Ext(base))]
+			base = strings.TrimSuffix(base, filepath.Ext(base))
 			previewOutput := fmt.Sprintf("%s/_thumbnails/%s.jpg", imgDir, base)
 			if err := img.Resize(4, imgOutput, previewOutput); err != nil {
 				log.Println(fmt.Errorf("❌ couldn't preview `%s`: %w", imgOutput, err))

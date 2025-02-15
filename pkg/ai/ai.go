@@ -229,13 +229,13 @@ func (i *Image) FileNames() []string {
 var nonAlphanumericRegex = regexp.MustCompile(`[^\p{L}\p{N} _]+`)
 
 func fixString(str string) string {
-	split := strings.Split(str, " ")
+	parts := strings.Split(str, " ")
 	var filtered []string
-	for _, s := range split {
+	for _, s := range parts {
 		if u, err := url.Parse(s); err == nil && u.Scheme != "" {
 			continue
 		}
-		if len(s) == 0 {
+		if s == "" {
 			continue
 		}
 		filtered = append(filtered, s)
@@ -246,8 +246,9 @@ func fixString(str string) string {
 	str = strings.ReplaceAll(str, " ", "_")
 
 	// Limit to 50 characters to avoid issues with file names
-	if len(str) > 50 {
-		str = str[:50]
+	runes := []rune(str)
+	if len(runes) > 50 {
+		str = string(runes[:50])
 	}
 	return str
 }
