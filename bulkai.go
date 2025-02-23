@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -352,18 +353,27 @@ func Generate(ctx context.Context, cfg *Config, opts ...Option) error {
 		}
 		lck.Lock()
 		album.UpdatedAt = time.Now().UTC()
-		percentage := float32(len(album.Images)) * 100.0 / float32(total)
-		if percentage > album.Percentage {
-			avg := album.UpdatedAt.Sub(album.CreatedAt) / time.Duration(len(album.Images))
-			estimated := (time.Duration(total-len(album.Images)) * avg).Round(time.Minute)
-			if o.onUpdate != nil {
-				o.onUpdate(Status{
-					Percentage: percentage,
-					Estimated:  estimated,
-				})
+
+		if total == 0 {
+			album.Percentage = 0
+		} else {
+			percentage := float32(len(album.Images)) * 100.0 / float32(total)
+			if math.IsNaN(float64(percentage)) {
+				album.Percentage = 0
+			} else {
+				if percentage > album.Percentage {
+					avg := album.UpdatedAt.Sub(album.CreatedAt) / time.Duration(len(album.Images))
+					estimated := (time.Duration(total-len(album.Images)) * avg).Round(time.Minute)
+					if o.onUpdate != nil {
+						o.onUpdate(Status{
+							Percentage: percentage,
+							Estimated:  estimated,
+						})
+					}
+				}
+				album.Percentage = percentage
 			}
 		}
-		album.Percentage = percentage
 		album.Status = status
 
 		err := SaveAlbum(albumDir, album, cfg.Thumbnail, cfg.Html)
