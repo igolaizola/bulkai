@@ -1,9 +1,7 @@
 package session
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -13,13 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
-	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/igolaizola/bulkai"
-	"github.com/igolaizola/bulkai/pkg/scrapfly"
 	"gopkg.in/yaml.v3"
 )
 
@@ -89,86 +84,89 @@ func Run(ctx context.Context, profile bool, output, proxy string) error {
 	*/
 
 	// obtain ja3
-	var ja3 string
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(scrapfly.FPJA3WebURL),
-		chromedp.WaitReady("#ja3", chromedp.ByQuery),
-	); err != nil {
-		return fmt.Errorf("could not navigate to ja3 page: %w", err)
-	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(1 * time.Second):
-	}
-	var fpJA3 scrapfly.FPJA3
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`window.fingerprint`, &fpJA3),
-	); err != nil {
-		return fmt.Errorf("could not obtain fingerprint: %w", err)
-	}
-	ja3 = fpJA3.JA3
-	if ja3 == "" {
-		return errors.New("empty ja3")
-	}
-	log.Println("ja3:", ja3)
+	/*
+		var ja3 string
+		if err := chromedp.Run(ctx,
+			chromedp.Navigate(scrapfly.FPJA3WebURL),
+			chromedp.WaitReady("#ja3", chromedp.ByQuery),
+		); err != nil {
+			return fmt.Errorf("could not navigate to ja3 page: %w", err)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(1 * time.Second):
+		}
+		var fpJA3 scrapfly.FPJA3
+		if err := chromedp.Run(ctx,
+			chromedp.Evaluate(`window.fingerprint`, &fpJA3),
+		); err != nil {
+			return fmt.Errorf("could not obtain fingerprint: %w", err)
+		}
+		ja3 = fpJA3.JA3
+		if ja3 == "" {
+			return errors.New("empty ja3")
+		}
+		log.Println("ja3:", ja3)
+	*/
 
 	// obtain user agent
-	var userAgent, acceptLanguage string
-	if err := chromedp.Run(ctx,
-		chromedp.Navigate(scrapfly.FPHTTP2WebURL),
-		chromedp.WaitReady("#http2_headers_frame pre", chromedp.ByQuery),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			node, err := dom.GetDocument().Do(ctx)
-			if err != nil {
-				return fmt.Errorf("couldn't get document: %w", err)
-			}
-			res, err := dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
-			if err != nil {
-				return fmt.Errorf("couldn't get outer html: %w", err)
-			}
-			doc, err := goquery.NewDocumentFromReader(bytes.NewBuffer([]byte(res)))
-			if err != nil {
-				return fmt.Errorf("couldn't create document: %w", err)
-			}
-			body := doc.Find("#http2_headers_frame pre").Text()
-			if body == "" {
-				return errors.New("couldn't obtain info http")
-			}
-			var infoHTTP2 scrapfly.InfoHTTP2
-			log.Println(body)
-			if err := json.Unmarshal([]byte(body), &infoHTTP2); err != nil {
-				return fmt.Errorf("couldn't unmarshal info http: %w", err)
-			}
-			if len(infoHTTP2.Headers) == 0 {
-				return errors.New("empty headers")
-			}
-			if _, ok := infoHTTP2.Headers["user-agent"]; !ok {
-				return errors.New("empty user agent")
-			}
-			userAgent = infoHTTP2.Headers["user-agent"][0]
-			if userAgent == "" {
-				return errors.New("empty user agent")
-			}
-			log.Println("user-agent:", userAgent)
-			v, ok := infoHTTP2.Headers["accept-language"]
-			if !ok || len(v) == 0 {
-				return errors.New("empty accept language")
-			}
-			acceptLanguage = strings.Split(v[0], ",")[0]
-			log.Println("language:", acceptLanguage)
-			return nil
-		}),
-	); err != nil {
-		return fmt.Errorf("could not obtain user agent: %w", err)
-	}
-	if userAgent == "" {
-		return errors.New("empty user agent")
-	}
-	if acceptLanguage == "" {
-		return errors.New("empty accept language")
-	}
-
+	/*
+		var userAgent, acceptLanguage string
+		if err := chromedp.Run(ctx,
+			chromedp.Navigate(scrapfly.FPHTTP2WebURL),
+			chromedp.WaitReady("#http2_headers_frame pre", chromedp.ByQuery),
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				node, err := dom.GetDocument().Do(ctx)
+				if err != nil {
+					return fmt.Errorf("couldn't get document: %w", err)
+				}
+				res, err := dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
+				if err != nil {
+					return fmt.Errorf("couldn't get outer html: %w", err)
+				}
+				doc, err := goquery.NewDocumentFromReader(bytes.NewBuffer([]byte(res)))
+				if err != nil {
+					return fmt.Errorf("couldn't create document: %w", err)
+				}
+				body := doc.Find("#http2_headers_frame pre").Text()
+				if body == "" {
+					return errors.New("couldn't obtain info http")
+				}
+				var infoHTTP2 scrapfly.InfoHTTP2
+				log.Println(body)
+				if err := json.Unmarshal([]byte(body), &infoHTTP2); err != nil {
+					return fmt.Errorf("couldn't unmarshal info http: %w", err)
+				}
+				if len(infoHTTP2.Headers) == 0 {
+					return errors.New("empty headers")
+				}
+				if _, ok := infoHTTP2.Headers["user-agent"]; !ok {
+					return errors.New("empty user agent")
+				}
+				userAgent = infoHTTP2.Headers["user-agent"][0]
+				if userAgent == "" {
+					return errors.New("empty user agent")
+				}
+				log.Println("user-agent:", userAgent)
+				v, ok := infoHTTP2.Headers["accept-language"]
+				if !ok || len(v) == 0 {
+					return errors.New("empty accept language")
+				}
+				acceptLanguage = strings.Split(v[0], ",")[0]
+				log.Println("language:", acceptLanguage)
+				return nil
+			}),
+		); err != nil {
+			return fmt.Errorf("could not obtain user agent: %w", err)
+		}
+		if userAgent == "" {
+			return errors.New("empty user agent")
+		}
+		if acceptLanguage == "" {
+			return errors.New("empty accept language")
+		}
+	*/
 	var lck sync.Mutex
 
 	// Obtain discord token
@@ -240,20 +238,20 @@ func Run(ctx context.Context, profile bool, output, proxy string) error {
 		return ctx.Err()
 	}
 
-	userAgent = strings.ReplaceAll(userAgent, "\n", "")
-	userAgent = strings.ReplaceAll(userAgent, "like  Gecko", "like Gecko")
+	// userAgent = strings.ReplaceAll(userAgent, "\n", "")
+	// userAgent = strings.ReplaceAll(userAgent, "like  Gecko", "like Gecko")
 	cookie = strings.ReplaceAll(cookie, "\n", "")
 	cookie = strings.ReplaceAll(cookie, ";  ", "; ")
 
 	// save session
 	session := &bulkai.Session{
-		JA3:             ja3,
-		UserAgent:       userAgent,
+		// JA3:             ja3,
+		// UserAgent:       userAgent,
 		Token:           token,
 		SuperProperties: xSuperProperties,
 		Locale:          xDiscordLocale,
 		Cookie:          cookie,
-		Language:        acceptLanguage,
+		// Language:        acceptLanguage,
 	}
 	data, err := yaml.Marshal(session)
 	if err != nil {

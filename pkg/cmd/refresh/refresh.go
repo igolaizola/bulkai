@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/igolaizola/bulkai/pkg/discord"
-	"github.com/igolaizola/bulkai/pkg/http"
+	"github.com/igolaizola/bulkai/pkg/fhttp"
 	"gopkg.in/yaml.v2"
 )
 
@@ -89,7 +89,7 @@ func Run(ctx context.Context, cfg *Config) error {
 	}
 
 	// Create http client
-	httpClient, err := http.NewClient(cfg.Session.JA3, cfg.Session.UserAgent, cfg.Session.Language, cfg.Proxy)
+	httpClient, err := fhttp.NewClient(1*time.Minute, true, cfg.Proxy)
 	if err != nil {
 		return fmt.Errorf("couldn't create http client: %w", err)
 	}
@@ -102,11 +102,11 @@ func Run(ctx context.Context, cfg *Config) error {
 		os.Setenv("HTTP_PROXY", p)
 	}
 
-	if err := http.SetCookies(httpClient, "https://discord.com", cfg.Session.Cookie); err != nil {
+	if err := fhttp.SetCookies(httpClient, "https://discord.com", cfg.Session.Cookie); err != nil {
 		return fmt.Errorf("couldn't set cookies: %w", err)
 	}
 	defer func() {
-		cookie, err := http.GetCookies(httpClient, "https://discord.com")
+		cookie, err := fhttp.GetCookies(httpClient, "https://discord.com")
 		if err != nil {
 			log.Printf("couldn't get cookies: %v\n", err)
 		}
