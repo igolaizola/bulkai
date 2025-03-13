@@ -1,6 +1,7 @@
 module github.com/igolaizola/bulkai
 
 go 1.22
+toolchain go1.23.7
 
 require (
 	github.com/Danny-Dasilva/fhttp v0.0.0-20240217042913-eeeb0b347ce1
@@ -15,7 +16,7 @@ require (
 	github.com/peterbourgon/ff/v3 v3.4.0
 	github.com/refraction-networking/utls v1.5.4
 	golang.org/x/image v0.18.0
-	golang.org/x/net v0.28.0
+	golang.org/x/net v0.36.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -32,7 +33,7 @@ require (
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/quic-go/quic-go v0.48.2 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/crypto v0.35.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 )
